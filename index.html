@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>תמונת מצב הסבת תשתיות</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#f4f6f9; --surface:#ffffff; --surface2:#f0f2f5; --border:#dde1e9;
+  --accent:#3b82f6; --green:#059669; --red:#dc2626; --yellow:#d97706;
+  --text:#111827; --muted:#6b7280;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;direction:rtl;min-height:100vh;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:22px 36px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+header h1{font-size:1.3rem;font-weight:700;letter-spacing:-.4px;}
+header .sub{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+.badge{background:var(--accent);color:#fff;font-size:0.7rem;font-weight:700;padding:4px 12px;border-radius:20px;}
+
+main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-direction:column;gap:28px;}
+
+/* SUMMARY */
+.summary-banner{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+.s-stats{display:flex;gap:0;flex-wrap:wrap;flex:1;}
+.s-stat{display:flex;flex-direction:column;gap:3px;padding:6px 28px 6px 0;border-left:1px solid var(--border);margin-left:28px;}
+.s-stat:first-child{padding-right:0;}
+.s-stat:last-child{border-left:none;}
+.s-val{font-size:2.8rem;font-weight:900;line-height:1;}
+.s-val.blue{color:var(--accent);}.s-val.green{color:var(--green);}.s-val.red{color:var(--red);}
+.s-label{font-size:0.74rem;color:var(--muted);font-weight:500;}
+.s-bar-wrap{min-width:200px;}
+.s-bar-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:8px;}
+.s-bar-track{height:10px;background:rgba(220,38,38,.12);border-radius:99px;overflow:hidden;}
+.s-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),#34d399);border-radius:99px;transition:width 1.1s ease;}
+.s-pct{font-size:0.78rem;color:var(--green);font-weight:700;margin-top:5px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
+.kpi-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.kpi-card::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;border-radius:13px 13px 0 0;}
+.kpi-card.blue::before{background:var(--accent);}.kpi-card.green::before{background:var(--green);}
+.kpi-card.red::before{background:var(--red);}.kpi-card.yellow::before{background:var(--yellow);}
+.kpi-label{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.kpi-value{font-size:2.4rem;font-weight:900;line-height:1;}
+.kpi-card.blue .kpi-value{color:var(--accent);}.kpi-card.green .kpi-value{color:var(--green);}
+.kpi-card.red .kpi-value{color:var(--red);}.kpi-card.yellow .kpi-value{color:var(--yellow);}
+.kpi-sub{font-size:0.72rem;color:var(--muted);margin-top:6px;}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:24px;}
+.chart-card.full{grid-column:1/-1;}
+.chart-title{font-size:0.92rem;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.chart-title small{font-size:0.73rem;color:var(--muted);font-weight:400;}
+.chart-wrap{position:relative;height:270px;}
+.chart-wrap.tall{height:340px;}
+
+/* TABLE SECTION */
+.table-section-header{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px;}
+.section-title{font-size:1rem;font-weight:700;}
+.section-sub{font-size:0.76rem;color:var(--muted);margin-top:2px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.filter-bar select, .filter-bar input{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  font-family:'Heebo',sans-serif;font-size:0.78rem;padding:7px 12px;border-radius:8px;
+  outline:none;transition:border-color .15s;cursor:pointer;
+  -webkit-appearance:none; appearance:none;
+}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent);}
+.filter-bar input{width:180px;}
+.filter-bar input::placeholder{color:var(--muted);}
+.filter-clear{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Heebo',sans-serif;font-size:0.76rem;padding:7px 12px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.filter-clear:hover{border-color:var(--red);color:var(--red);}
+.filter-count{font-size:0.74rem;color:var(--muted);white-space:nowrap;align-self:center;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:11px;border:1px solid var(--border);-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+thead th{background:var(--surface2);color:var(--muted);font-weight:700;text-align:right;padding:11px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s;}
+thead th:hover{color:var(--text);}
+thead th .sort-icon{margin-right:4px;opacity:.4;font-size:0.65rem;}
+thead th.sorted .sort-icon{opacity:1;color:var(--accent);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tbody td{padding:9px 14px;white-space:nowrap;}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:0.69rem;font-weight:700;}
+.pill.done{background:rgba(5,150,105,.12);color:var(--green);}
+.pill.todo{background:rgba(220,38,38,.12);color:var(--red);}
+.pill.prio{background:rgba(59,130,246,.12);color:var(--accent);}
+.type-tag{background:var(--surface2);border:1px solid var(--border);padding:2px 7px;border-radius:6px;font-size:0.69rem;color:var(--muted);}
+.dash{color:#c0c8d4;}
+.no-results{text-align:center;padding:32px;color:var(--muted);font-size:0.85rem;}
+
+/* TYPE GROUP HEADER */
+.group-header td{background:var(--surface2);color:var(--muted);font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:7px 14px;border-bottom:1px solid var(--border);}
+
+footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;border-top:1px solid var(--border);}
+
+@media(max-width:900px){
+  header{padding:15px 18px;}
+  main{padding:18px 14px;gap:18px;}
+  .kpi-row{grid-template-columns:1fr 1fr;gap:10px;}
+  .charts-grid{grid-template-columns:1fr;}
+  .chart-card.full{grid-column:1;}
+  .summary-banner{flex-direction:column;align-items:flex-start;}
+  .s-bar-wrap{width:100%;}
+  .filter-bar input{width:140px;}
+}
+@media(max-width:500px){
+  .kpi-value{font-size:1.9rem;}
+  .s-val{font-size:2rem;}
+  .chart-wrap{height:220px;}
+  .chart-wrap.tall{height:260px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>תמונת מצב הסבת תשתיות</h1><div class="sub">נכון למרץ 2026 — כל גופי התשתית</div></div>
+  <div class="badge">LIVE DATA</div>
+</header>
+<main>
+  <div class="summary-banner" id="summaryBanner"></div>
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>טופל / לא טופל</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שטופלו <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שלא טופלו <small>לא טופל בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">מגמת טיפול לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">טופל לעומת לא טופל — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
+  </div>
+
+  <!-- TABLE -->
+  <div>
+    <div class="table-section-header">
+      <div>
+        <div class="section-title">רשימת גופי תשתית</div>
+        <div class="section-sub">מיון לפי סוג תשתית — ניתן לפילטר ומיון</div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍  חיפוש גוף...">
+        <select id="filterType"><option value="">כל הסוגים</option></select>
+        <select id="filterPrio"><option value="">כל העדיפויות</option><option value="1">עדיפות 1</option><option value="2">עדיפות 2</option><option value="none">ללא עדיפות</option></select>
+        <select id="filterStatus25">
+          <option value="">סטטוס 2025 — הכל</option>
+          <option value="done">טופל 2025</option>
+          <option value="todo">לא טופל 2025</option>
+        </select>
+        <button class="filter-clear" id="clearFilters">נקה</button>
+        <span class="filter-count" id="filterCount"></span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead><tr>
+          <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
+          <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
+          <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
+          <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
+        </tr></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<footer>נתונים: קליטת תשתיות ואינטרסים — מאגר גופי תשתית</footer>
+
+<script>
+const API_URL = "https://script.googleusercontent.com/a/macros/mapi.gov.il/echo?user_content_key=AWDtjMXi_axOcHFLgNUVY-B_zMgORY_dPqT3OpGSeA2j4gCuEuwmhsULNJrc_r0n0DrQKRsvGGG93TeKIikgPSJidVm-Fehp1S-wi-3RSmpaXDHjDBKyQHVfAPx6qEyBMREhHR_ei1j3Cy140j5WdvG10nUciJ5RbEPsaRIgwF0VL2BDfgzivywa-8SgimD0m5-rj4nguxvMhjzxeV7KgEJz3wGu6Wgq7GGi7rVLy5qwwdqDfS8r3HlatxKGBEby_cuKIi_ThsXBAyHDWRMvapNeR3evl5xViVcs1zCcaWV4rwxs9yBttrg&lib=MukQpa7AmSROif_1gei7mD9_p82Qk_FaP";
+
+const YEARS = ["2019","2020","2021","2022","2023","2024","2025","2026"];
+const YEAR_INDEXES = [3,4,5,6,7,8,9,10];
+
+let raw = [];
+let TYPES = [];
+let sortCol = 0;
+let sortDir = 1;
+let charts = {};
+
+const C = {
+  blue:'rgba(59,130,246,.85)',
+  green:'rgba(5,150,105,.85)',
+  red:'rgba(220,38,38,.85)',
+  yellow:'rgba(217,119,6,.85)',
+  purple:'rgba(139,92,246,.85)',
+  teal:'rgba(20,184,166,.85)',
+  orange:'rgba(249,115,22,.85)'
+};
+
+const PIE_COLORS = [
+  'rgba(59,130,246,.85)',
+  'rgba(5,150,105,.85)',
+  'rgba(217,119,6,.85)',
+  'rgba(220,38,38,.85)',
+  'rgba(139,92,246,.85)',
+  'rgba(20,184,166,.85)',
+  'rgba(249,115,22,.85)',
+  'rgba(236,72,153,.85)'
+];
+
+Chart.defaults.color = '#6b7280';
+Chart.defaults.font.family = "'Heebo',sans-serif";
+
+function normalizeValue(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function normalizeStatus(value) {
+  const v = normalizeValue(value);
+  if (!v) return "";
+  if (v === "טופל") return "טופל";
+  if (v === "לא טופל") return "לא טופל";
+  return "";
+}
+
+function normalizePriority(value) {
+  const v = normalizeValue(value);
+  if (v === "1" || v === "2") return v;
+  return "";
+}
+
+function normalizeRow(item) {
+  return [
+    normalizeValue(item["סוג תשתית"]),
+    normalizeValue(item["גוף תשתית"]),
+    normalizePriority(item["רמת תעדוף"]),
+    normalizeStatus(item["2019"]),
+    normalizeStatus(item["2020"]),
+    normalizeStatus(item["2021"]),
+    normalizeStatus(item["2022"]),
+    normalizeStatus(item["2023"]),
+    normalizeStatus(item["2024"]),
+    normalizeStatus(item["2025"]),
+    normalizeStatus(item["2026"])
+  ];
+}
+
+function isDone(row, colIndex) {
+  return row[colIndex] === "טופל";
+}
+
+function isTodo(row, colIndex) {
+  return row[colIndex] === "לא טופל";
+}
+
+function everDone(row) {
+  return YEAR_INDEXES.some(colIndex => isDone(row, colIndex));
+}
+
+function neverDone(row) {
+  return YEAR_INDEXES.every(colIndex => !isDone(row, colIndex));
+}
+
+function setLoadingState(message = "טוען נתונים...") {
+  document.getElementById("summaryBanner").innerHTML = `<div class="section-sub">${message}</div>`;
+  document.getElementById("kpiRow").innerHTML = "";
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("filterCount").textContent = "";
+}
+
+function setErrorState(message) {
+  document.getElementById("summaryBanner").innerHTML = `
+    <div style="color:var(--red);font-weight:700;">שגיאה בטעינת הנתונים</div>
+    <div class="section-sub">${message}</div>
+  `;
+  document.getElementById("kpiRow").innerHTML = "";
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("filterCount").textContent = "";
+}
+
+function populateTypeFilter() {
+  const select = document.getElementById("filterType");
+  select.innerHTML = `<option value="">כל הסוגים</option>`;
+  TYPES.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    select.appendChild(option);
+  });
+}
+
+function renderSummary() {
+  const total = raw.length;
+  const prio1 = raw.filter(r => r[2] === "1").length;
+  const doneEver = raw.filter(everDone).length;
+  const neverD = raw.filter(r => neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length;
+  const done25 = raw.filter(r => isDone(r, 9)).length;
+  const todo25 = raw.filter(r => isTodo(r, 9)).length;
+  const pct = total ? Math.round((doneEver / total) * 100) : 0;
+
+  document.getElementById("summaryBanner").innerHTML = `
+    <div class="s-stats">
+      <div class="s-stat"><div class="s-val blue">${total}</div><div class="s-label">סה"כ גופים ייחודיים</div></div>
+      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">טופלו (לפחות שנה)</div></div>
+      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">לא טופלו כלל</div></div>
+    </div>
+    <div class="s-bar-wrap">
+      <div class="s-bar-label"><span>אחוז טיפול כולל</span><span>${doneEver} מתוך ${total}</span></div>
+      <div class="s-bar-track"><div class="s-bar-fill" id="sf" style="width:0%"></div></div>
+      <div class="s-pct">${pct}% מהגופים טופלו</div>
+    </div>
+  `;
+
+  document.getElementById("kpiRow").innerHTML = `
+    <div class="kpi-card blue"><div class="kpi-label">סה"כ גופים</div><div class="kpi-value">${total}</div><div class="kpi-sub">גופי תשתית במאגר</div></div>
+    <div class="kpi-card yellow"><div class="kpi-label">עדיפות 1</div><div class="kpi-value">${prio1}</div><div class="kpi-sub">גופים בעדיפות ראשונה</div></div>
+    <div class="kpi-card green"><div class="kpi-label">טופל ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שהושלמו</div></div>
+    <div class="kpi-card red"><div class="kpi-label">לא טופל ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">ממתינים לטיפול</div></div>
+  `;
+
+  setTimeout(() => {
+    const fill = document.getElementById("sf");
+    if (fill) fill.style.width = pct + "%";
+  }, 120);
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(chart => {
+    if (chart) chart.destroy();
+  });
+  charts = {};
+}
+
+function chartOpts(extra = {}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { padding: 14, font: { size: 11 } }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 } } },
+      y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+    },
+    ...extra
+  };
+}
+
+function renderCharts() {
+  destroyCharts();
+
+  const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
+  const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
+  const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
+  const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
+  const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
+
+  charts.byType = new Chart(document.getElementById("cByType"), {
+    type: 'bar',
+    data: {
+      labels: typesAll,
+      datasets: [
+        {
+          label: 'טופל',
+          data: doneCnt,
+          backgroundColor: C.green,
+          borderRadius: 4
+        },
+        {
+          label: 'לא טופל',
+          data: todoCnt,
+          backgroundColor: C.red,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: chartOpts()
+  });
+
+  const doughnutOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { padding: 10, font: { size: 10 }, boxWidth: 12 }
+      }
+    },
+    cutout: '58%'
+  };
+
+  charts.pieDone = new Chart(document.getElementById("cPieDone"), {
+    type: 'doughnut',
+    data: {
+      labels: typesAll,
+      datasets: [{
+        data: doneCnt,
+        backgroundColor: PIE_COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: doughnutOpts
+  });
+
+  charts.pieTodo = new Chart(document.getElementById("cPieTodo"), {
+    type: 'doughnut',
+    data: {
+      labels: typesAll,
+      datasets: [{
+        data: todoCnt,
+        backgroundColor: PIE_COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: doughnutOpts
+  });
+
+  charts.trend = new Chart(document.getElementById("cTrend"), {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'טופל',
+          data: donePerYear,
+          borderColor: C.green,
+          backgroundColor: 'rgba(5,150,105,.08)',
+          fill: true,
+          tension: .4,
+          pointRadius: 5,
+          pointBackgroundColor: C.green
+        },
+        {
+          label: 'לא טופל',
+          data: todoPerYear,
+          borderColor: C.red,
+          backgroundColor: 'rgba(220,38,38,.06)',
+          fill: true,
+          tension: .4,
+          pointRadius: 5,
+          pointBackgroundColor: C.red
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 16, font: { size: 12 } }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  charts.stacked = new Chart(document.getElementById("cStacked"), {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'טופל',
+          data: donePerYear,
+          backgroundColor: C.green,
+          borderRadius: 4
+        },
+        {
+          label: 'לא טופל',
+          data: todoPerYear,
+          backgroundColor: C.red,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 16, font: { size: 11 } }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+const pH = value =>
+  value === "טופל"
+    ? '<span class="pill done">טופל</span>'
+    : value === "לא טופל"
+      ? '<span class="pill todo">לא טופל</span>'
+      : '<span class="dash">—</span>';
+
+function getFilteredSorted() {
+  const search = document.getElementById("searchInput").value.trim().toLowerCase();
+  const fType = document.getElementById("filterType").value;
+  const fPrio = document.getElementById("filterPrio").value;
+  const fSt25 = document.getElementById("filterStatus25").value;
+
+  const rows = raw.filter(r => {
+    if (search) {
+      const name = (r[1] || "").toLowerCase();
+      const type = (r[0] || "").toLowerCase();
+      if (!name.includes(search) && !type.includes(search)) return false;
+    }
+    if (fType && r[0] !== fType) return false;
+    if (fPrio === "1" && r[2] !== "1") return false;
+    if (fPrio === "2" && r[2] !== "2") return false;
+    if (fPrio === "none" && r[2] !== "") return false;
+    if (fSt25 === "done" && r[9] !== "טופל") return false;
+    if (fSt25 === "todo" && r[9] !== "לא טופל") return false;
+    return true;
+  });
+
+  rows.sort((a, b) => {
+    const va = a[sortCol] || "";
+    const vb = b[sortCol] || "";
+
+    if (sortCol === 0) {
+      const typeCompare = va.localeCompare(vb, "he");
+      if (typeCompare !== 0) return typeCompare * sortDir;
+      return a[1].localeCompare(b[1], "he");
+    }
+
+    const cmp = va.localeCompare(vb, "he");
+    return cmp !== 0 ? cmp * sortDir : a[0].localeCompare(b[0], "he");
+  });
+
+  return rows;
+}
+
+function renderTable() {
+  const rows = getFilteredSorted();
+  const tbody = document.getElementById("tBody");
+  tbody.innerHTML = "";
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="no-results">לא נמצאו תוצאות</td></tr>`;
+    document.getElementById("filterCount").textContent = "0 גופים";
+    return;
+  }
+
+  const groupByType = sortCol === 0;
+  let currentType = null;
+
+  rows.forEach(r => {
+    if (groupByType && r[0] !== currentType) {
+      currentType = r[0];
+      const groupCount = rows.filter(x => x[0] === currentType).length;
+      tbody.innerHTML += `<tr class="group-header"><td colspan="8">${currentType} — ${groupCount} גופים</td></tr>`;
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${r[1] || '<span class="dash">—</span>'}</td>
+        <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
+        <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
+        <td>${pH(r[6])}</td>
+        <td>${pH(r[7])}</td>
+        <td>${pH(r[8])}</td>
+        <td>${pH(r[9])}</td>
+        <td>${pH(r[10])}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("filterCount").textContent = rows.length + " גופים";
+}
+
+function renderAll() {
+  TYPES = [...new Set(raw.map(r => r[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
+  populateTypeFilter();
+  renderSummary();
+  renderCharts();
+  renderTable();
+}
+
+function bindEvents() {
+  document.querySelectorAll("thead th[data-col]").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = parseInt(th.dataset.col, 10);
+      if (sortCol === col) {
+        sortDir *= -1;
+      } else {
+        sortCol = col;
+        sortDir = 1;
+      }
+
+      document.querySelectorAll("thead th").forEach(h => {
+        h.classList.remove("sorted");
+        const icon = h.querySelector(".sort-icon");
+        if (icon) icon.textContent = "↕";
+      });
+
+      th.classList.add("sorted");
+      const icon = th.querySelector(".sort-icon");
+      if (icon) icon.textContent = sortDir === 1 ? "↑" : "↓";
+
+      renderTable();
+    });
+  });
+
+  ["searchInput","filterType","filterPrio","filterStatus25"].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("input", renderTable);
+    el.addEventListener("change", renderTable);
+  });
+
+  document.getElementById("clearFilters").addEventListener("click", () => {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("filterType").value = "";
+    document.getElementById("filterPrio").value = "";
+    document.getElementById("filterStatus25").value = "";
+    renderTable();
+  });
+}
+
+async function loadData() {
+  setLoadingState();
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const rows = Array.isArray(payload) ? payload : payload.data;
+
+    if (!Array.isArray(rows)) {
+      throw new Error("מבנה תגובה לא תקין");
+    }
+
+    raw = rows
+      .map(normalizeRow)
+      .filter(row => row[0] || row[1]);
+
+    renderAll();
+  } catch (error) {
+    console.error("Failed to load data:", error);
+    setErrorState("לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.");
+  }
+}
+
+bindEvents();
+loadData();
+</script>
+</body>
+</html>
