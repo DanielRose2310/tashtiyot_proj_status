@@ -129,14 +129,22 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
 <main>
   <div class="summary-banner" id="summaryBanner"></div>
   <div class="kpi-row" id="kpiRow"></div>
-
-  <div class="charts-grid">
+  
+<div class="charts-grid">
+  <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">גופים שנטענו למאגר <small>לפי סוג תשתית</small></div><div class="chart-wrap"><canvas id="cPieLoaded"></canvas></div></div>
+  <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
+  <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
+</div>
+  <!-- <div class="charts-grid">
     <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
-  </div>
+  </div> -->
 
   <div>
     <div class="table-section-header">
@@ -226,7 +234,6 @@ function normalizePriority(value) {
   if (v === "1" || v === "2") return v;
   return "";
 }
-
 function normalizeRow(item) {
   return [
     normalizeValue(item["סוג תשתית"]),
@@ -239,10 +246,31 @@ function normalizeRow(item) {
     normalizeStatus(item["2023"]),
     normalizeStatus(item["2024"]),
     normalizeStatus(item["2025"]),
-    normalizeStatus(item["2026"])
+    normalizeStatus(item["2026"]),
+    normalizeValue(item["טעינה למאגר"])
   ];
 }
+  
+// function normalizeRow(item) {
+//   return [
+//     normalizeValue(item["סוג תשתית"]),
+//     normalizeValue(item["גוף תשתית"]),
+//     normalizePriority(item["רמת תעדוף"]),
+//     normalizeStatus(item["2019"]),
+//     normalizeStatus(item["2020"]),
+//     normalizeStatus(item["2021"]),
+//     normalizeStatus(item["2022"]),
+//     normalizeStatus(item["2023"]),
+//     normalizeStatus(item["2024"]),
+//     normalizeStatus(item["2025"]),
+//     normalizeStatus(item["2026"])
+//   ];
+// }
 
+function isLoadedToRepository(row) {
+  return !!normalizeValue(row[11]);
+}
+  
 function isDone(row, colIndex) {
   return row[colIndex] === "טופל";
 }
@@ -346,13 +374,13 @@ function chartOpts(extra = {}) {
     ...extra
   };
 }
-
 function renderCharts() {
   destroyCharts();
 
   const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
   const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
   const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
+  const loadedCnt = typesAll.map(t => raw.filter(r => r[0] === t && isLoadedToRepository(r)).length);
   const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
   const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
 
@@ -410,6 +438,20 @@ function renderCharts() {
       labels: typesAll,
       datasets: [{
         data: todoCnt,
+        backgroundColor: PIE_COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: doughnutOpts
+  });
+
+  charts.pieLoaded = new Chart(document.getElementById("cPieLoaded"), {
+    type: 'doughnut',
+    data: {
+      labels: typesAll,
+      datasets: [{
+        data: loadedCnt,
         backgroundColor: PIE_COLORS,
         borderWidth: 2,
         borderColor: '#ffffff'
@@ -496,6 +538,155 @@ function renderCharts() {
     }
   });
 }
+// function renderCharts() {
+//   destroyCharts();
+
+//   const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
+//   const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
+//   const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
+//   const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
+//   const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
+
+//   charts.byType = new Chart(document.getElementById("cByType"), {
+//     type: 'bar',
+//     data: {
+//       labels: typesAll,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: doneCnt,
+//           backgroundColor: C.green,
+//           borderRadius: 4
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoCnt,
+//           backgroundColor: C.red,
+//           borderRadius: 4
+//         }
+//       ]
+//     },
+//     options: chartOpts()
+//   });
+
+//   const doughnutOpts = {
+//     responsive: true,
+//     maintainAspectRatio: false,
+//     plugins: {
+//       legend: {
+//         position: 'bottom',
+//         labels: { padding: 10, font: { size: 10 }, boxWidth: 12 }
+//       }
+//     },
+//     cutout: '58%'
+//   };
+
+//   charts.pieDone = new Chart(document.getElementById("cPieDone"), {
+//     type: 'doughnut',
+//     data: {
+//       labels: typesAll,
+//       datasets: [{
+//         data: doneCnt,
+//         backgroundColor: PIE_COLORS,
+//         borderWidth: 2,
+//         borderColor: '#ffffff'
+//       }]
+//     },
+//     options: doughnutOpts
+//   });
+
+//   charts.pieTodo = new Chart(document.getElementById("cPieTodo"), {
+//     type: 'doughnut',
+//     data: {
+//       labels: typesAll,
+//       datasets: [{
+//         data: todoCnt,
+//         backgroundColor: PIE_COLORS,
+//         borderWidth: 2,
+//         borderColor: '#ffffff'
+//       }]
+//     },
+//     options: doughnutOpts
+//   });
+
+//   charts.trend = new Chart(document.getElementById("cTrend"), {
+//     type: 'line',
+//     data: {
+//       labels: YEARS,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: donePerYear,
+//           borderColor: C.green,
+//           backgroundColor: 'rgba(5,150,105,.08)',
+//           fill: true,
+//           tension: .4,
+//           pointRadius: 5,
+//           pointBackgroundColor: C.green
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoPerYear,
+//           borderColor: C.red,
+//           backgroundColor: 'rgba(220,38,38,.06)',
+//           fill: true,
+//           tension: .4,
+//           pointRadius: 5,
+//           pointBackgroundColor: C.red
+//         }
+//       ]
+//     },
+//     options: {
+//       responsive: true,
+//       maintainAspectRatio: false,
+//       plugins: {
+//         legend: {
+//           position: 'bottom',
+//           labels: { padding: 16, font: { size: 12 } }
+//         }
+//       },
+//       scales: {
+//         x: { grid: { color: 'rgba(0,0,0,0.06)' } },
+//         y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+//       }
+//     }
+//   });
+
+//   charts.stacked = new Chart(document.getElementById("cStacked"), {
+//     type: 'bar',
+//     data: {
+//       labels: YEARS,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: donePerYear,
+//           backgroundColor: C.green,
+//           borderRadius: 4
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoPerYear,
+//           backgroundColor: C.red,
+//           borderRadius: 4
+//         }
+//       ]
+//     },
+//     options: {
+//       responsive: true,
+//       maintainAspectRatio: false,
+//       plugins: {
+//         legend: {
+//           position: 'bottom',
+//           labels: { padding: 16, font: { size: 11 } }
+//         }
+//       },
+//       scales: {
+//         x: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+//         y: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+//       }
+//     }
+//   });
+// }
 
 const pH = value =>
   value === "טופל"
