@@ -10,7 +10,7 @@
 :root {
   --bg:#f4f6f9; --surface:#ffffff; --surface2:#f0f2f5; --border:#dde1e9;
   --accent:#3b82f6; --green:#059669; --red:#dc2626; --yellow:#d97706;
-  --text:#111827; --muted:#6b7280;
+  --text:#111827; --muted:#6b7280;   --teal:#14b8a6;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;direction:rtl;min-height:100vh;}
@@ -38,7 +38,7 @@ main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-directio
 .s-pct{font-size:0.78rem;color:var(--green);font-weight:700;margin-top:5px;}
 
 /* KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
 .kpi-card:hover{transform:translateY(-2px);border-color:var(--accent);}
 .kpi-card::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;border-radius:13px 13px 0 0;}
@@ -50,6 +50,9 @@ main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-directio
 .kpi-card.red .kpi-value{color:var(--red);}.kpi-card.yellow .kpi-value{color:var(--yellow);}
 .kpi-sub{font-size:0.72rem;color:var(--muted);margin-top:6px;}
 
+.kpi-card.teal::before{background:var(--teal);}
+.kpi-card.teal .kpi-value{color:var(--teal);}
+  
 /* CHARTS */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:24px;}
@@ -129,16 +132,23 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
 <main>
   <div class="summary-banner" id="summaryBanner"></div>
   <div class="kpi-row" id="kpiRow"></div>
+  
+<div class="charts-grid">
+  <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">גופים שנטענו למאגר <small>לפי סוג תשתית</small></div><div class="chart-wrap"><canvas id="cPieLoaded"></canvas></div></div>
+  <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
+  <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
+</div>
+  <!-- <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
+  </div> -->
 
-  <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>טופל / לא טופל</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">התפלגות גופים שטופלו <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">התפלגות גופים שלא טופלו <small>לא טופל בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
-    <div class="chart-card full"><div class="chart-title">מגמת טיפול לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
-    <div class="chart-card full"><div class="chart-title">טופל לעומת לא טופל — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
-  </div>
-
-  <!-- TABLE -->
   <div>
     <div class="table-section-header">
       <div>
@@ -151,8 +161,8 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
         <select id="filterPrio"><option value="">כל העדיפויות</option><option value="1">עדיפות 1</option><option value="2">עדיפות 2</option><option value="none">ללא עדיפות</option></select>
         <select id="filterStatus25">
           <option value="">סטטוס 2025 — הכל</option>
-          <option value="done">טופל 2025</option>
-          <option value="todo">לא טופל 2025</option>
+          <option value="done">עבר הסבה ב-2025</option>
+          <option value="todo">לא עבר הסבה ב-2025</option>
         </select>
         <button class="filter-clear" id="clearFilters">נקה</button>
         <span class="filter-count" id="filterCount"></span>
@@ -160,12 +170,13 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     </div>
     <div class="table-wrap">
       <table id="mainTable">
-        <thead><tr>
-          <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
-          <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
-          <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
-          <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
-        </tr></thead>
+      <thead><tr>
+        <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
+        <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
+        <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
+        <th>טעינה למאגר</th>
+        <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
+      </tr></thead>
         <tbody id="tBody"></tbody>
       </table>
     </div>
@@ -227,7 +238,6 @@ function normalizePriority(value) {
   if (v === "1" || v === "2") return v;
   return "";
 }
-
 function normalizeRow(item) {
   return [
     normalizeValue(item["סוג תשתית"]),
@@ -240,10 +250,33 @@ function normalizeRow(item) {
     normalizeStatus(item["2023"]),
     normalizeStatus(item["2024"]),
     normalizeStatus(item["2025"]),
-    normalizeStatus(item["2026"])
+    normalizeStatus(item["2026"]),
+    normalizeValue(item["טעינה למאגר"])
   ];
 }
+  
+// function normalizeRow(item) {
+//   return [
+//     normalizeValue(item["סוג תשתית"]),
+//     normalizeValue(item["גוף תשתית"]),
+//     normalizePriority(item["רמת תעדוף"]),
+//     normalizeStatus(item["2019"]),
+//     normalizeStatus(item["2020"]),
+//     normalizeStatus(item["2021"]),
+//     normalizeStatus(item["2022"]),
+//     normalizeStatus(item["2023"]),
+//     normalizeStatus(item["2024"]),
+//     normalizeStatus(item["2025"]),
+//     normalizeStatus(item["2026"])
+//   ];
+// }
 
+function isLoadedToRepository(row) {
+  return !!normalizeValue(row[11]);
+}
+const loadedTotal = raw.filter(r => isLoadedToRepository(r)).length;
+
+  
 function isDone(row, colIndex) {
   return row[colIndex] === "טופל";
 }
@@ -263,7 +296,7 @@ function neverDone(row) {
 function setLoadingState(message = "טוען נתונים...") {
   document.getElementById("summaryBanner").innerHTML = `<div class="section-sub">${message}</div>`;
   document.getElementById("kpiRow").innerHTML = "";
-  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="9" class="no-results">${message}</td></tr>`;
   document.getElementById("filterCount").textContent = "";
 }
 
@@ -273,7 +306,7 @@ function setErrorState(message) {
     <div class="section-sub">${message}</div>
   `;
   document.getElementById("kpiRow").innerHTML = "";
-  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="9" class="no-results">${message}</td></tr>`;
   document.getElementById("filterCount").textContent = "";
 }
 
@@ -295,27 +328,28 @@ function renderSummary() {
   const neverD = raw.filter(r => neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length;
   const done25 = raw.filter(r => isDone(r, 9)).length;
   const todo25 = raw.filter(r => isTodo(r, 9)).length;
+  const loadedTotal = raw.filter(r => isLoadedToRepository(r)).length;
   const pct = total ? Math.round((doneEver / total) * 100) : 0;
 
   document.getElementById("summaryBanner").innerHTML = `
     <div class="s-stats">
       <div class="s-stat"><div class="s-val blue">${total}</div><div class="s-label">סה"כ גופים ייחודיים</div></div>
-      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">טופלו (לפחות שנה)</div></div>
-      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">לא טופלו כלל</div></div>
+      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">גופים שעברו הסבה (לפחות שנה)</div></div>
+      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">גופים שלא עברו הסבה כלל</div></div>
     </div>
     <div class="s-bar-wrap">
-      <div class="s-bar-label"><span>אחוז טיפול כולל</span><span>${doneEver} מתוך ${total}</span></div>
+      <div class="s-bar-label"><span>אחוז הסבה כולל</span><span>${doneEver} מתוך ${total}</span></div>
       <div class="s-bar-track"><div class="s-bar-fill" id="sf" style="width:0%"></div></div>
-      <div class="s-pct">${pct}% מהגופים טופלו</div>
+      <div class="s-pct">${pct}% מהגופים עברו הסבה</div>
     </div>
   `;
 
   document.getElementById("kpiRow").innerHTML = `
     <div class="kpi-card blue"><div class="kpi-label">סה"כ גופים</div><div class="kpi-value">${total}</div><div class="kpi-sub">גופי תשתית במאגר</div></div>
     <div class="kpi-card yellow"><div class="kpi-label">עדיפות 1</div><div class="kpi-value">${prio1}</div><div class="kpi-sub">גופים בעדיפות ראשונה</div></div>
-    <div class="kpi-card green"><div class="kpi-label">טופל ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שהושלמו</div></div>
-    <div class="kpi-card red"><div class="kpi-label">לא טופל ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">ממתינים לטיפול</div></div>
-  `;
+    <div class="kpi-card green"><div class="kpi-label">עבר הסבה ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שעברו הסבה</div></div>
+    <div class="kpi-card red"><div class="kpi-label">לא עבר הסבה ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">גופים שממתינים להסבה</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">נטענו למאגר</div><div class="kpi-value">${loadedTotal}</div><div class="kpi-sub">גופים שנטענו למאגר</div></div>`;
 
   setTimeout(() => {
     const fill = document.getElementById("sf");
@@ -347,13 +381,13 @@ function chartOpts(extra = {}) {
     ...extra
   };
 }
-
 function renderCharts() {
   destroyCharts();
 
   const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
   const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
   const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
+  const loadedCnt = typesAll.map(t => raw.filter(r => r[0] === t && isLoadedToRepository(r)).length);
   const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
   const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
 
@@ -363,13 +397,13 @@ function renderCharts() {
       labels: typesAll,
       datasets: [
         {
-          label: 'טופל',
+          label: 'עבר הסבה',
           data: doneCnt,
           backgroundColor: C.green,
           borderRadius: 4
         },
         {
-          label: 'לא טופל',
+          label: 'לא עבר הסבה',
           data: todoCnt,
           backgroundColor: C.red,
           borderRadius: 4
@@ -419,13 +453,27 @@ function renderCharts() {
     options: doughnutOpts
   });
 
+  charts.pieLoaded = new Chart(document.getElementById("cPieLoaded"), {
+    type: 'doughnut',
+    data: {
+      labels: typesAll,
+      datasets: [{
+        data: loadedCnt,
+        backgroundColor: PIE_COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: doughnutOpts
+  });
+
   charts.trend = new Chart(document.getElementById("cTrend"), {
     type: 'line',
     data: {
       labels: YEARS,
       datasets: [
         {
-          label: 'טופל',
+          label: 'עבר הסבה',
           data: donePerYear,
           borderColor: C.green,
           backgroundColor: 'rgba(5,150,105,.08)',
@@ -435,7 +483,7 @@ function renderCharts() {
           pointBackgroundColor: C.green
         },
         {
-          label: 'לא טופל',
+          label: 'לא עבר הסבה',
           data: todoPerYear,
           borderColor: C.red,
           backgroundColor: 'rgba(220,38,38,.06)',
@@ -468,13 +516,13 @@ function renderCharts() {
       labels: YEARS,
       datasets: [
         {
-          label: 'טופל',
+          label: 'עבר הסבה',
           data: donePerYear,
           backgroundColor: C.green,
           borderRadius: 4
         },
         {
-          label: 'לא טופל',
+          label: 'לא עבר הסבה',
           data: todoPerYear,
           backgroundColor: C.red,
           borderRadius: 4
@@ -497,12 +545,161 @@ function renderCharts() {
     }
   });
 }
+// function renderCharts() {
+//   destroyCharts();
+
+//   const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
+//   const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
+//   const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
+//   const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
+//   const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
+
+//   charts.byType = new Chart(document.getElementById("cByType"), {
+//     type: 'bar',
+//     data: {
+//       labels: typesAll,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: doneCnt,
+//           backgroundColor: C.green,
+//           borderRadius: 4
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoCnt,
+//           backgroundColor: C.red,
+//           borderRadius: 4
+//         }
+//       ]
+//     },
+//     options: chartOpts()
+//   });
+
+//   const doughnutOpts = {
+//     responsive: true,
+//     maintainAspectRatio: false,
+//     plugins: {
+//       legend: {
+//         position: 'bottom',
+//         labels: { padding: 10, font: { size: 10 }, boxWidth: 12 }
+//       }
+//     },
+//     cutout: '58%'
+//   };
+
+//   charts.pieDone = new Chart(document.getElementById("cPieDone"), {
+//     type: 'doughnut',
+//     data: {
+//       labels: typesAll,
+//       datasets: [{
+//         data: doneCnt,
+//         backgroundColor: PIE_COLORS,
+//         borderWidth: 2,
+//         borderColor: '#ffffff'
+//       }]
+//     },
+//     options: doughnutOpts
+//   });
+
+//   charts.pieTodo = new Chart(document.getElementById("cPieTodo"), {
+//     type: 'doughnut',
+//     data: {
+//       labels: typesAll,
+//       datasets: [{
+//         data: todoCnt,
+//         backgroundColor: PIE_COLORS,
+//         borderWidth: 2,
+//         borderColor: '#ffffff'
+//       }]
+//     },
+//     options: doughnutOpts
+//   });
+
+//   charts.trend = new Chart(document.getElementById("cTrend"), {
+//     type: 'line',
+//     data: {
+//       labels: YEARS,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: donePerYear,
+//           borderColor: C.green,
+//           backgroundColor: 'rgba(5,150,105,.08)',
+//           fill: true,
+//           tension: .4,
+//           pointRadius: 5,
+//           pointBackgroundColor: C.green
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoPerYear,
+//           borderColor: C.red,
+//           backgroundColor: 'rgba(220,38,38,.06)',
+//           fill: true,
+//           tension: .4,
+//           pointRadius: 5,
+//           pointBackgroundColor: C.red
+//         }
+//       ]
+//     },
+//     options: {
+//       responsive: true,
+//       maintainAspectRatio: false,
+//       plugins: {
+//         legend: {
+//           position: 'bottom',
+//           labels: { padding: 16, font: { size: 12 } }
+//         }
+//       },
+//       scales: {
+//         x: { grid: { color: 'rgba(0,0,0,0.06)' } },
+//         y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+//       }
+//     }
+//   });
+
+//   charts.stacked = new Chart(document.getElementById("cStacked"), {
+//     type: 'bar',
+//     data: {
+//       labels: YEARS,
+//       datasets: [
+//         {
+//           label: 'עבר הסבה',
+//           data: donePerYear,
+//           backgroundColor: C.green,
+//           borderRadius: 4
+//         },
+//         {
+//           label: 'לא עבר הסבה',
+//           data: todoPerYear,
+//           backgroundColor: C.red,
+//           borderRadius: 4
+//         }
+//       ]
+//     },
+//     options: {
+//       responsive: true,
+//       maintainAspectRatio: false,
+//       plugins: {
+//         legend: {
+//           position: 'bottom',
+//           labels: { padding: 16, font: { size: 11 } }
+//         }
+//       },
+//       scales: {
+//         x: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+//         y: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
+//       }
+//     }
+//   });
+// }
 
 const pH = value =>
   value === "טופל"
-    ? '<span class="pill done">טופל</span>'
+    ? '<span class="pill done">עבר הסבה</span>'
     : value === "לא טופל"
-      ? '<span class="pill todo">לא טופל</span>'
+      ? '<span class="pill todo">לא עבר הסבה</span>'
       : '<span class="dash">—</span>';
 
 function getFilteredSorted() {
@@ -549,7 +746,7 @@ function renderTable() {
   tbody.innerHTML = "";
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="no-results">לא נמצאו תוצאות</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="no-results">לא נמצאו תוצאות</td></tr>`;
     document.getElementById("filterCount").textContent = "0 גופים";
     return;
   }
@@ -557,25 +754,32 @@ function renderTable() {
   const groupByType = sortCol === 0;
   let currentType = null;
 
+function loadedMark(row) {
+  return normalizeValue(row[11])
+    ? '<span class="pill done">✓</span>'
+    : '';
+}
+  
   rows.forEach(r => {
     if (groupByType && r[0] !== currentType) {
       currentType = r[0];
       const groupCount = rows.filter(x => x[0] === currentType).length;
-      tbody.innerHTML += `<tr class="group-header"><td colspan="8">${currentType} — ${groupCount} גופים</td></tr>`;
+      tbody.innerHTML += `<tr class="group-header"><td colspan="9">${currentType} — ${groupCount} גופים</td></tr>`;
     }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>${r[1] || '<span class="dash">—</span>'}</td>
-        <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
-        <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
-        <td>${pH(r[6])}</td>
-        <td>${pH(r[7])}</td>
-        <td>${pH(r[8])}</td>
-        <td>${pH(r[9])}</td>
-        <td>${pH(r[10])}</td>
-      </tr>
-    `;
+tbody.innerHTML += `
+  <tr>
+    <td>${r[1] || '<span class="dash">—</span>'}</td>
+    <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
+    <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
+    <td>${loadedMark(r)}</td>
+    <td>${pH(r[6])}</td>
+    <td>${pH(r[7])}</td>
+    <td>${pH(r[8])}</td>
+    <td>${pH(r[9])}</td>
+    <td>${pH(r[10])}</td>
+  </tr>
+`;
   });
 
   document.getElementById("filterCount").textContent = rows.length + " גופים";
