@@ -131,11 +131,11 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
   <div class="kpi-row" id="kpiRow"></div>
 
   <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עבר הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>טופל / לא טופל</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שטופלו <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">התפלגות גופים שלא טופלו <small>לא טופל בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">מגמת טיפול לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
-    <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">טופל לעומת לא טופל — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
   </div>
 
   <!-- TABLE -->
@@ -151,8 +151,8 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
         <select id="filterPrio"><option value="">כל העדיפויות</option><option value="1">עדיפות 1</option><option value="2">עדיפות 2</option><option value="none">ללא עדיפות</option></select>
         <select id="filterStatus25">
           <option value="">סטטוס 2025 — הכל</option>
-          <option value="done">עבר הסבה 2025</option>
-          <option value="todo">לא עבר הסבה 2025</option>
+          <option value="done">טופל 2025</option>
+          <option value="todo">לא טופל 2025</option>
         </select>
         <button class="filter-clear" id="clearFilters">נקה</button>
         <span class="filter-count" id="filterCount"></span>
@@ -217,8 +217,8 @@ function normalizeValue(value) {
 function normalizeStatus(value) {
   const v = normalizeValue(value);
   if (!v) return "";
-  if (v === "טופל") return "עבר הסבה";
-  if (v === "לא טופל") return "לא עבר הסבה";
+  if (v === "טופל") return "טופל";
+  if (v === "לא טופל") return "לא טופל";
   return "";
 }
 
@@ -300,21 +300,21 @@ function renderSummary() {
   document.getElementById("summaryBanner").innerHTML = `
     <div class="s-stats">
       <div class="s-stat"><div class="s-val blue">${total}</div><div class="s-label">סה"כ גופים ייחודיים</div></div>
-      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">עבר הסבהו (לפחות שנה)</div></div>
-      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">לא עבר הסבהו כלל</div></div>
+      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">טופלו (לפחות שנה)</div></div>
+      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">לא טופלו כלל</div></div>
     </div>
     <div class="s-bar-wrap">
       <div class="s-bar-label"><span>אחוז טיפול כולל</span><span>${doneEver} מתוך ${total}</span></div>
       <div class="s-bar-track"><div class="s-bar-fill" id="sf" style="width:0%"></div></div>
-      <div class="s-pct">${pct}% מהגופים עברו הסבה</div>
+      <div class="s-pct">${pct}% מהגופים טופלו</div>
     </div>
   `;
 
   document.getElementById("kpiRow").innerHTML = `
     <div class="kpi-card blue"><div class="kpi-label">סה"כ גופים</div><div class="kpi-value">${total}</div><div class="kpi-sub">גופי תשתית במאגר</div></div>
     <div class="kpi-card yellow"><div class="kpi-label">עדיפות 1</div><div class="kpi-value">${prio1}</div><div class="kpi-sub">גופים בעדיפות ראשונה</div></div>
-    <div class="kpi-card green"><div class="kpi-label">עבר הסבה ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שהושלמו</div></div>
-    <div class="kpi-card red"><div class="kpi-label">לא עבר הסבה ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">ממתינים לטיפול</div></div>
+    <div class="kpi-card green"><div class="kpi-label">טופל ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שהושלמו</div></div>
+    <div class="kpi-card red"><div class="kpi-label">לא טופל ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">ממתינים לטיפול</div></div>
   `;
 
   setTimeout(() => {
@@ -363,13 +363,13 @@ function renderCharts() {
       labels: typesAll,
       datasets: [
         {
-          label: 'עבר הסבה',
+          label: 'טופל',
           data: doneCnt,
           backgroundColor: C.green,
           borderRadius: 4
         },
         {
-          label: 'לא עבר הסבה',
+          label: 'לא טופל',
           data: todoCnt,
           backgroundColor: C.red,
           borderRadius: 4
@@ -425,7 +425,7 @@ function renderCharts() {
       labels: YEARS,
       datasets: [
         {
-          label: 'עבר הסבה',
+          label: 'טופל',
           data: donePerYear,
           borderColor: C.green,
           backgroundColor: 'rgba(5,150,105,.08)',
@@ -435,7 +435,7 @@ function renderCharts() {
           pointBackgroundColor: C.green
         },
         {
-          label: 'לא עבר הסבה',
+          label: 'לא טופל',
           data: todoPerYear,
           borderColor: C.red,
           backgroundColor: 'rgba(220,38,38,.06)',
@@ -468,13 +468,13 @@ function renderCharts() {
       labels: YEARS,
       datasets: [
         {
-          label: 'עבר הסבה',
+          label: 'טופל',
           data: donePerYear,
           backgroundColor: C.green,
           borderRadius: 4
         },
         {
-          label: 'לא עבר הסבה',
+          label: 'לא טופל',
           data: todoPerYear,
           backgroundColor: C.red,
           borderRadius: 4
@@ -499,10 +499,10 @@ function renderCharts() {
 }
 
 const pH = value =>
-  value === "עבר הסבה"
-    ? '<span class="pill done">עבר הסבה</span>'
-    : value === "לא עבר הסבה"
-      ? '<span class="pill todo">לא עבר הסבה</span>'
+  value === "טופל"
+    ? '<span class="pill done">טופל</span>'
+    : value === "לא טופל"
+      ? '<span class="pill todo">לא טופל</span>'
       : '<span class="dash">—</span>';
 
 function getFilteredSorted() {
