@@ -10,7 +10,7 @@
 :root {
   --bg:#f4f6f9; --surface:#ffffff; --surface2:#f0f2f5; --border:#dde1e9;
   --accent:#3b82f6; --green:#059669; --red:#dc2626; --yellow:#d97706;
-  --text:#111827; --muted:#6b7280;   --teal:#14b8a6;
+  --text:#111827; --muted:#6b7280; --teal:#14b8a6;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;direction:rtl;min-height:100vh;}
@@ -27,32 +27,55 @@ main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-directio
 .s-stats{display:flex;gap:0;flex-wrap:wrap;flex:1;}
 .s-stat{display:flex;flex-direction:column;gap:3px;padding:6px 28px 6px 0;border-left:1px solid var(--border);margin-left:28px;}
 .s-stat:first-child{padding-right:0;}
-.s-stat:last-child{border-left:none;}
 .s-val{font-size:2.8rem;font-weight:900;line-height:1;}
-.s-val.blue{color:var(--accent);}.s-val.green{color:var(--green);}.s-val.red{color:var(--red);}
+.s-val.blue{color:var(--accent);}
+.s-val.green{color:var(--green);}
+.s-val.red{color:var(--red);}
+.s-val.teal{color:var(--teal);}
 .s-label{font-size:0.74rem;color:var(--muted);font-weight:500;}
-.s-bar-wrap{min-width:200px;}
+.s-bar-wrap{min-width:220px;}
 .s-bar-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:8px;}
 .s-bar-track{height:10px;background:rgba(220,38,38,.12);border-radius:99px;overflow:hidden;}
 .s-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),#34d399);border-radius:99px;transition:width 1.1s ease;}
 .s-pct{font-size:0.78rem;color:var(--green);font-weight:700;margin-top:5px;}
 
+/* LOADING */
+.loading-shell{display:flex;align-items:center;justify-content:center;gap:12px;padding:18px 0;color:var(--muted);}
+.spinner{
+  width:22px;
+  height:22px;
+  border:3px solid rgba(59,130,246,.18);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin .75s linear infinite;
+}
+.loading-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:22px 28px;
+}
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
+
 /* KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
 .kpi-card:hover{transform:translateY(-2px);border-color:var(--accent);}
 .kpi-card::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;border-radius:13px 13px 0 0;}
-.kpi-card.blue::before{background:var(--accent);}.kpi-card.green::before{background:var(--green);}
-.kpi-card.red::before{background:var(--red);}.kpi-card.yellow::before{background:var(--yellow);}
+.kpi-card.blue::before{background:var(--accent);}
+.kpi-card.green::before{background:var(--green);}
+.kpi-card.red::before{background:var(--red);}
+.kpi-card.yellow::before{background:var(--yellow);}
 .kpi-label{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
 .kpi-value{font-size:2.4rem;font-weight:900;line-height:1;}
-.kpi-card.blue .kpi-value{color:var(--accent);}.kpi-card.green .kpi-value{color:var(--green);}
-.kpi-card.red .kpi-value{color:var(--red);}.kpi-card.yellow .kpi-value{color:var(--yellow);}
+.kpi-card.blue .kpi-value{color:var(--accent);}
+.kpi-card.green .kpi-value{color:var(--green);}
+.kpi-card.red .kpi-value{color:var(--red);}
+.kpi-card.yellow .kpi-value{color:var(--yellow);}
 .kpi-sub{font-size:0.72rem;color:var(--muted);margin-top:6px;}
 
-.kpi-card.teal::before{background:var(--teal);}
-.kpi-card.teal .kpi-value{color:var(--teal);}
-  
 /* CHARTS */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:24px;}
@@ -129,25 +152,19 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
   <div><h1>תמונת מצב הסבת תשתיות</h1><div class="sub">נכון למרץ 2026 — כל גופי התשתית</div></div>
   <div class="badge">LIVE DATA</div>
 </header>
+
 <main>
   <div class="summary-banner" id="summaryBanner"></div>
   <div class="kpi-row" id="kpiRow"></div>
-  
-<div class="charts-grid">
-  <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
-  <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
-  <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
-  <div class="chart-card"><div class="chart-title">גופים שנטענו למאגר <small>לפי סוג תשתית</small></div><div class="chart-wrap"><canvas id="cPieLoaded"></canvas></div></div>
-  <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
-  <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
-</div>
-  <!-- <div class="charts-grid">
+
+  <div class="charts-grid">
     <div class="chart-card"><div class="chart-title">סטטוס לפי סוג תשתית <small>עבר הסבה / לא עבר הסבה</small></div><div class="chart-wrap"><canvas id="cByType"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">גופים שנטענו למאגר <small>לפי סוג תשתית</small></div><div class="chart-wrap"><canvas id="cPieLoaded"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
-  </div> -->
+  </div>
 
   <div>
     <div class="table-section-header">
@@ -170,18 +187,21 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     </div>
     <div class="table-wrap">
       <table id="mainTable">
-      <thead><tr>
-        <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
-        <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
-        <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
-        <th>טעינה למאגר</th>
-        <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
-      </tr></thead>
+        <thead>
+          <tr>
+            <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
+            <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
+            <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
+            <th>טעינה למאגר</th>
+            <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
+          </tr>
+        </thead>
         <tbody id="tBody"></tbody>
       </table>
     </div>
   </div>
 </main>
+
 <footer>נתונים: קליטת תשתיות ואינטרסים — מאגר גופי תשתית</footer>
 
 <script>
@@ -238,6 +258,7 @@ function normalizePriority(value) {
   if (v === "1" || v === "2") return v;
   return "";
 }
+
 function normalizeRow(item) {
   return [
     normalizeValue(item["סוג תשתית"]),
@@ -254,29 +275,11 @@ function normalizeRow(item) {
     normalizeValue(item["טעינה למאגר"])
   ];
 }
-  
-// function normalizeRow(item) {
-//   return [
-//     normalizeValue(item["סוג תשתית"]),
-//     normalizeValue(item["גוף תשתית"]),
-//     normalizePriority(item["רמת תעדוף"]),
-//     normalizeStatus(item["2019"]),
-//     normalizeStatus(item["2020"]),
-//     normalizeStatus(item["2021"]),
-//     normalizeStatus(item["2022"]),
-//     normalizeStatus(item["2023"]),
-//     normalizeStatus(item["2024"]),
-//     normalizeStatus(item["2025"]),
-//     normalizeStatus(item["2026"])
-//   ];
-// }
 
 function isLoadedToRepository(row) {
   return !!normalizeValue(row[11]);
 }
-const loadedTotal = raw.filter(r => isLoadedToRepository(r)).length;
 
-  
 function isDone(row, colIndex) {
   return row[colIndex] === "טופל";
 }
@@ -294,9 +297,33 @@ function neverDone(row) {
 }
 
 function setLoadingState(message = "טוען נתונים...") {
-  document.getElementById("summaryBanner").innerHTML = `<div class="section-sub">${message}</div>`;
-  document.getElementById("kpiRow").innerHTML = "";
-  document.getElementById("tBody").innerHTML = `<tr><td colspan="9" class="no-results">${message}</td></tr>`;
+  document.getElementById("summaryBanner").innerHTML = `
+    <div class="loading-shell">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="section-sub">${message}</div>
+    </div>
+  `;
+
+  document.getElementById("kpiRow").innerHTML = `
+    <div class="loading-panel" style="grid-column:1/-1;">
+      <div class="loading-shell">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="section-sub">ממתין לתשובת API...</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("tBody").innerHTML = `
+    <tr>
+      <td colspan="9" class="no-results">
+        <div class="loading-shell">
+          <div class="spinner" aria-hidden="true"></div>
+          <div>${message}</div>
+        </div>
+      </td>
+    </tr>
+  `;
+
   document.getElementById("filterCount").textContent = "";
 }
 
@@ -333,9 +360,22 @@ function renderSummary() {
 
   document.getElementById("summaryBanner").innerHTML = `
     <div class="s-stats">
-      <div class="s-stat"><div class="s-val blue">${total}</div><div class="s-label">סה"כ גופים ייחודיים</div></div>
-      <div class="s-stat"><div class="s-val green">${doneEver}</div><div class="s-label">גופים שעברו הסבה (לפחות שנה)</div></div>
-      <div class="s-stat"><div class="s-val red">${neverD}</div><div class="s-label">גופים שלא עברו הסבה כלל</div></div>
+      <div class="s-stat">
+        <div class="s-val blue">${total}</div>
+        <div class="s-label">סה"כ גופים ייחודיים</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val green">${doneEver}</div>
+        <div class="s-label">גופים שעברו הסבה (לפחות שנה)</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val red">${neverD}</div>
+        <div class="s-label">גופים שלא עברו הסבה כלל</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val teal">${loadedTotal}</div>
+        <div class="s-label">גופים שנטענו למאגר</div>
+      </div>
     </div>
     <div class="s-bar-wrap">
       <div class="s-bar-label"><span>אחוז הסבה כולל</span><span>${doneEver} מתוך ${total}</span></div>
@@ -349,7 +389,7 @@ function renderSummary() {
     <div class="kpi-card yellow"><div class="kpi-label">עדיפות 1</div><div class="kpi-value">${prio1}</div><div class="kpi-sub">גופים בעדיפות ראשונה</div></div>
     <div class="kpi-card green"><div class="kpi-label">עבר הסבה ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שעברו הסבה</div></div>
     <div class="kpi-card red"><div class="kpi-label">לא עבר הסבה ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">גופים שממתינים להסבה</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">נטענו למאגר</div><div class="kpi-value">${loadedTotal}</div><div class="kpi-sub">גופים שנטענו למאגר</div></div>`;
+  `;
 
   setTimeout(() => {
     const fill = document.getElementById("sf");
@@ -381,6 +421,7 @@ function chartOpts(extra = {}) {
     ...extra
   };
 }
+
 function renderCharts() {
   destroyCharts();
 
@@ -545,155 +586,6 @@ function renderCharts() {
     }
   });
 }
-// function renderCharts() {
-//   destroyCharts();
-
-//   const typesAll = [...new Set(raw.map(r => r[0]).filter(Boolean))];
-//   const doneCnt = typesAll.map(t => raw.filter(r => r[0] === t && everDone(r)).length);
-//   const todoCnt = typesAll.map(t => raw.filter(r => r[0] === t && neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length);
-//   const donePerYear = YEAR_INDEXES.map(c => raw.filter(r => isDone(r, c)).length);
-//   const todoPerYear = YEAR_INDEXES.map(c => raw.filter(r => isTodo(r, c)).length);
-
-//   charts.byType = new Chart(document.getElementById("cByType"), {
-//     type: 'bar',
-//     data: {
-//       labels: typesAll,
-//       datasets: [
-//         {
-//           label: 'עבר הסבה',
-//           data: doneCnt,
-//           backgroundColor: C.green,
-//           borderRadius: 4
-//         },
-//         {
-//           label: 'לא עבר הסבה',
-//           data: todoCnt,
-//           backgroundColor: C.red,
-//           borderRadius: 4
-//         }
-//       ]
-//     },
-//     options: chartOpts()
-//   });
-
-//   const doughnutOpts = {
-//     responsive: true,
-//     maintainAspectRatio: false,
-//     plugins: {
-//       legend: {
-//         position: 'bottom',
-//         labels: { padding: 10, font: { size: 10 }, boxWidth: 12 }
-//       }
-//     },
-//     cutout: '58%'
-//   };
-
-//   charts.pieDone = new Chart(document.getElementById("cPieDone"), {
-//     type: 'doughnut',
-//     data: {
-//       labels: typesAll,
-//       datasets: [{
-//         data: doneCnt,
-//         backgroundColor: PIE_COLORS,
-//         borderWidth: 2,
-//         borderColor: '#ffffff'
-//       }]
-//     },
-//     options: doughnutOpts
-//   });
-
-//   charts.pieTodo = new Chart(document.getElementById("cPieTodo"), {
-//     type: 'doughnut',
-//     data: {
-//       labels: typesAll,
-//       datasets: [{
-//         data: todoCnt,
-//         backgroundColor: PIE_COLORS,
-//         borderWidth: 2,
-//         borderColor: '#ffffff'
-//       }]
-//     },
-//     options: doughnutOpts
-//   });
-
-//   charts.trend = new Chart(document.getElementById("cTrend"), {
-//     type: 'line',
-//     data: {
-//       labels: YEARS,
-//       datasets: [
-//         {
-//           label: 'עבר הסבה',
-//           data: donePerYear,
-//           borderColor: C.green,
-//           backgroundColor: 'rgba(5,150,105,.08)',
-//           fill: true,
-//           tension: .4,
-//           pointRadius: 5,
-//           pointBackgroundColor: C.green
-//         },
-//         {
-//           label: 'לא עבר הסבה',
-//           data: todoPerYear,
-//           borderColor: C.red,
-//           backgroundColor: 'rgba(220,38,38,.06)',
-//           fill: true,
-//           tension: .4,
-//           pointRadius: 5,
-//           pointBackgroundColor: C.red
-//         }
-//       ]
-//     },
-//     options: {
-//       responsive: true,
-//       maintainAspectRatio: false,
-//       plugins: {
-//         legend: {
-//           position: 'bottom',
-//           labels: { padding: 16, font: { size: 12 } }
-//         }
-//       },
-//       scales: {
-//         x: { grid: { color: 'rgba(0,0,0,0.06)' } },
-//         y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
-//       }
-//     }
-//   });
-
-//   charts.stacked = new Chart(document.getElementById("cStacked"), {
-//     type: 'bar',
-//     data: {
-//       labels: YEARS,
-//       datasets: [
-//         {
-//           label: 'עבר הסבה',
-//           data: donePerYear,
-//           backgroundColor: C.green,
-//           borderRadius: 4
-//         },
-//         {
-//           label: 'לא עבר הסבה',
-//           data: todoPerYear,
-//           backgroundColor: C.red,
-//           borderRadius: 4
-//         }
-//       ]
-//     },
-//     options: {
-//       responsive: true,
-//       maintainAspectRatio: false,
-//       plugins: {
-//         legend: {
-//           position: 'bottom',
-//           labels: { padding: 16, font: { size: 11 } }
-//         }
-//       },
-//       scales: {
-//         x: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' } },
-//         y: { stacked: true, grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
-//       }
-//     }
-//   });
-// }
 
 const pH = value =>
   value === "טופל"
@@ -740,6 +632,12 @@ function getFilteredSorted() {
   return rows;
 }
 
+function loadedMark(row) {
+  return normalizeValue(row[11])
+    ? '<span class="pill done">✓</span>'
+    : '';
+}
+
 function renderTable() {
   const rows = getFilteredSorted();
   const tbody = document.getElementById("tBody");
@@ -754,12 +652,6 @@ function renderTable() {
   const groupByType = sortCol === 0;
   let currentType = null;
 
-function loadedMark(row) {
-  return normalizeValue(row[11])
-    ? '<span class="pill done">✓</span>'
-    : '';
-}
-  
   rows.forEach(r => {
     if (groupByType && r[0] !== currentType) {
       currentType = r[0];
@@ -767,19 +659,19 @@ function loadedMark(row) {
       tbody.innerHTML += `<tr class="group-header"><td colspan="9">${currentType} — ${groupCount} גופים</td></tr>`;
     }
 
-tbody.innerHTML += `
-  <tr>
-    <td>${r[1] || '<span class="dash">—</span>'}</td>
-    <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
-    <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
-    <td>${loadedMark(r)}</td>
-    <td>${pH(r[6])}</td>
-    <td>${pH(r[7])}</td>
-    <td>${pH(r[8])}</td>
-    <td>${pH(r[9])}</td>
-    <td>${pH(r[10])}</td>
-  </tr>
-`;
+    tbody.innerHTML += `
+      <tr>
+        <td>${r[1] || '<span class="dash">—</span>'}</td>
+        <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
+        <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
+        <td>${loadedMark(r)}</td>
+        <td>${pH(r[6])}</td>
+        <td>${pH(r[7])}</td>
+        <td>${pH(r[8])}</td>
+        <td>${pH(r[9])}</td>
+        <td>${pH(r[10])}</td>
+      </tr>
+    `;
   });
 
   document.getElementById("filterCount").textContent = rows.length + " גופים";
