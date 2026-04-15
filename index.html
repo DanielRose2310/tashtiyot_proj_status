@@ -38,7 +38,7 @@ main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-directio
 .s-pct{font-size:0.78rem;color:var(--green);font-weight:700;margin-top:5px;}
 
 /* KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
 .kpi-card:hover{transform:translateY(-2px);border-color:var(--accent);}
 .kpi-card::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;border-radius:13px 13px 0 0;}
@@ -50,6 +50,9 @@ main{max-width:1400px;margin:0 auto;padding:32px 36px;display:flex;flex-directio
 .kpi-card.red .kpi-value{color:var(--red);}.kpi-card.yellow .kpi-value{color:var(--yellow);}
 .kpi-sub{font-size:0.72rem;color:var(--muted);margin-top:6px;}
 
+.kpi-card.teal::before{background:var(--teal);}
+.kpi-card.teal .kpi-value{color:var(--teal);}
+  
 /* CHARTS */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:24px;}
@@ -271,6 +274,8 @@ function normalizeRow(item) {
 function isLoadedToRepository(row) {
   return !!normalizeValue(row[11]);
 }
+const loadedTotal = raw.filter(r => isLoadedToRepository(r)).length;
+
   
 function isDone(row, colIndex) {
   return row[colIndex] === "טופל";
@@ -323,6 +328,7 @@ function renderSummary() {
   const neverD = raw.filter(r => neverDone(r) && YEAR_INDEXES.some(c => isTodo(r, c))).length;
   const done25 = raw.filter(r => isDone(r, 9)).length;
   const todo25 = raw.filter(r => isTodo(r, 9)).length;
+  const loadedTotal = raw.filter(r => isLoadedToRepository(r)).length;
   const pct = total ? Math.round((doneEver / total) * 100) : 0;
 
   document.getElementById("summaryBanner").innerHTML = `
@@ -343,7 +349,7 @@ function renderSummary() {
     <div class="kpi-card yellow"><div class="kpi-label">עדיפות 1</div><div class="kpi-value">${prio1}</div><div class="kpi-sub">גופים בעדיפות ראשונה</div></div>
     <div class="kpi-card green"><div class="kpi-label">עבר הסבה ב-2025</div><div class="kpi-value">${done25}</div><div class="kpi-sub">גופים שעברו הסבה</div></div>
     <div class="kpi-card red"><div class="kpi-label">לא עבר הסבה ב-2025</div><div class="kpi-value">${todo25}</div><div class="kpi-sub">גופים שממתינים להסבה</div></div>
-  `;
+    <div class="kpi-card teal"><div class="kpi-label">נטענו למאגר</div><div class="kpi-value">${loadedTotal}</div><div class="kpi-sub">גופים שנטענו למאגר</div></div>`;
 
   setTimeout(() => {
     const fill = document.getElementById("sf");
