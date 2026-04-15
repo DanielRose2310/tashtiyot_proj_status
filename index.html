@@ -167,12 +167,13 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     </div>
     <div class="table-wrap">
       <table id="mainTable">
-        <thead><tr>
-          <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
-          <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
-          <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
-          <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
-        </tr></thead>
+      <thead><tr>
+        <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
+        <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
+        <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
+        <th>טעינה למאגר</th>
+        <th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026</th>
+      </tr></thead>
         <tbody id="tBody"></tbody>
       </table>
     </div>
@@ -290,7 +291,7 @@ function neverDone(row) {
 function setLoadingState(message = "טוען נתונים...") {
   document.getElementById("summaryBanner").innerHTML = `<div class="section-sub">${message}</div>`;
   document.getElementById("kpiRow").innerHTML = "";
-  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="9" class="no-results">${message}</td></tr>`;
   document.getElementById("filterCount").textContent = "";
 }
 
@@ -300,7 +301,7 @@ function setErrorState(message) {
     <div class="section-sub">${message}</div>
   `;
   document.getElementById("kpiRow").innerHTML = "";
-  document.getElementById("tBody").innerHTML = `<tr><td colspan="8" class="no-results">${message}</td></tr>`;
+  document.getElementById("tBody").innerHTML = `<tr><td colspan="9" class="no-results">${message}</td></tr>`;
   document.getElementById("filterCount").textContent = "";
 }
 
@@ -739,7 +740,7 @@ function renderTable() {
   tbody.innerHTML = "";
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="no-results">לא נמצאו תוצאות</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="no-results">לא נמצאו תוצאות</td></tr>`;
     document.getElementById("filterCount").textContent = "0 גופים";
     return;
   }
@@ -747,25 +748,32 @@ function renderTable() {
   const groupByType = sortCol === 0;
   let currentType = null;
 
+function loadedMark(row) {
+  return normalizeValue(row[11])
+    ? '<span class="pill done">✓</span>'
+    : '';
+}
+  
   rows.forEach(r => {
     if (groupByType && r[0] !== currentType) {
       currentType = r[0];
       const groupCount = rows.filter(x => x[0] === currentType).length;
-      tbody.innerHTML += `<tr class="group-header"><td colspan="8">${currentType} — ${groupCount} גופים</td></tr>`;
+      tbody.innerHTML += `<tr class="group-header"><td colspan="9">${currentType} — ${groupCount} גופים</td></tr>`;
     }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>${r[1] || '<span class="dash">—</span>'}</td>
-        <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
-        <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
-        <td>${pH(r[6])}</td>
-        <td>${pH(r[7])}</td>
-        <td>${pH(r[8])}</td>
-        <td>${pH(r[9])}</td>
-        <td>${pH(r[10])}</td>
-      </tr>
-    `;
+tbody.innerHTML += `
+  <tr>
+    <td>${r[1] || '<span class="dash">—</span>'}</td>
+    <td>${groupByType ? '' : `<span class="type-tag">${r[0] || '—'}</span>`}</td>
+    <td>${r[2] ? `<span class="pill prio">עדיפות ${r[2]}</span>` : '<span class="dash">—</span>'}</td>
+    <td>${loadedMark(r)}</td>
+    <td>${pH(r[6])}</td>
+    <td>${pH(r[7])}</td>
+    <td>${pH(r[8])}</td>
+    <td>${pH(r[9])}</td>
+    <td>${pH(r[10])}</td>
+  </tr>
+`;
   });
 
   document.getElementById("filterCount").textContent = rows.length + " גופים";
