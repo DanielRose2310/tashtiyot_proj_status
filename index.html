@@ -217,8 +217,8 @@ function normalizeValue(value) {
 function normalizeStatus(value) {
   const v = normalizeValue(value);
   if (!v) return "";
-  if (v === "עבר הסבה") return "עבר הסבה";
-  if (v === "לא עבר הסבה") return "לא עבר הסבה";
+  if (v === "טופל") return "עבר הסבה";
+  if (v === "לא טופל") return "לא עבר הסבה";
   return "";
 }
 
@@ -245,11 +245,11 @@ function normalizeRow(item) {
 }
 
 function isDone(row, colIndex) {
-  return row[colIndex] === "עבר הסבה";
+  return row[colIndex] === "טופל";
 }
 
 function isTodo(row, colIndex) {
-  return row[colIndex] === "לא עבר הסבה";
+  return row[colIndex] === "לא טופל";
 }
 
 function everDone(row) {
@@ -306,7 +306,7 @@ function renderSummary() {
     <div class="s-bar-wrap">
       <div class="s-bar-label"><span>אחוז טיפול כולל</span><span>${doneEver} מתוך ${total}</span></div>
       <div class="s-bar-track"><div class="s-bar-fill" id="sf" style="width:0%"></div></div>
-      <div class="s-pct">${pct}% מהגופים עבר הסבהו</div>
+      <div class="s-pct">${pct}% מהגופים עברו הסבה</div>
     </div>
   `;
 
@@ -521,8 +521,8 @@ function getFilteredSorted() {
     if (fPrio === "1" && r[2] !== "1") return false;
     if (fPrio === "2" && r[2] !== "2") return false;
     if (fPrio === "none" && r[2] !== "") return false;
-    if (fSt25 === "done" && r[9] !== "עבר הסבה") return false;
-    if (fSt25 === "todo" && r[9] !== "לא עבר הסבה") return false;
+    if (fSt25 === "done" && r[9] !== "טופל") return false;
+    if (fSt25 === "todo" && r[9] !== "לא טופל") return false;
     return true;
   });
 
