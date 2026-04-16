@@ -162,7 +162,6 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     <div class="chart-card"><div class="chart-title">התפלגות גופים שעברו הסבה <small>לפחות שנה אחת</small></div><div class="chart-wrap"><canvas id="cPieDone"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">התפלגות גופים שלא עברו הסבה <small>לא עברו הסבה בכלל</small></div><div class="chart-wrap"><canvas id="cPieTodo"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">גופים שנטענו למאגר <small>לפי סוג תשתית</small></div><div class="chart-wrap"><canvas id="cPieLoaded"></canvas></div></div>
-    <div class="chart-card full"><div class="chart-title">מגמת הסבה לאורך שנים 2019–2026 <small>מספר גופים</small></div><div class="chart-wrap tall"><canvas id="cTrend"></canvas></div></div>
     <div class="chart-card full"><div class="chart-title">עבר הסבה לעומת לא עבר הסבה — לפי שנה</div><div class="chart-wrap"><canvas id="cStacked"></canvas></div></div>
   </div>
 
@@ -508,48 +507,6 @@ function renderCharts() {
     options: doughnutOpts
   });
 
-  charts.trend = new Chart(document.getElementById("cTrend"), {
-    type: 'line',
-    data: {
-      labels: YEARS,
-      datasets: [
-        {
-          label: 'עבר הסבה',
-          data: donePerYear,
-          borderColor: C.green,
-          backgroundColor: 'rgba(5,150,105,.08)',
-          fill: true,
-          tension: .4,
-          pointRadius: 5,
-          pointBackgroundColor: C.green
-        },
-        {
-          label: 'לא עבר הסבה',
-          data: todoPerYear,
-          borderColor: C.red,
-          backgroundColor: 'rgba(220,38,38,.06)',
-          fill: true,
-          tension: .4,
-          pointRadius: 5,
-          pointBackgroundColor: C.red
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { padding: 16, font: { size: 12 } }
-        }
-      },
-      scales: {
-        x: { grid: { color: 'rgba(0,0,0,0.06)' } },
-        y: { grid: { color: 'rgba(0,0,0,0.06)' }, beginAtZero: true }
-      }
-    }
-  });
 
   charts.stacked = new Chart(document.getElementById("cStacked"), {
     type: 'bar',
