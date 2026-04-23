@@ -386,9 +386,9 @@ function renderTableHeader() {
     <th data-col="1">גוף תשתית <span class="sort-icon">↕</span></th>
     <th data-col="0">סוג תשתית <span class="sort-icon">↕</span></th>
     <th data-col="2">עדיפות <span class="sort-icon">↕</span></th>
-    <th>טעינה למאגר</th>
-    <th>עבר הסבה</th>
-    ${YEARS.map(y => `<th>${y}</th>`).join("")}
+    <th data-col="11">טעינה למאגר <span class="sort-icon">↕</span></th>
+    <th data-col="latestConversion">עבר הסבה <span class="sort-icon">↕</span></th>
+    ${YEARS.map((y, i) => `<th data-col="${YEAR_INDEXES[i]}">${y} <span class="sort-icon">↕</span></th>`).join("")}
   `;
 }
 /* ---------------- ORIGINAL DASHBOARD LOGIC ---------------- */
@@ -399,7 +399,7 @@ const TOTAL_COLS = 5 + YEARS.length;
 
 let raw = [];
 let TYPES = [];
-let sortCol = 0;
+let sortCol = 2;
 let sortDir = 1;
 let charts = {};
 
@@ -711,40 +711,58 @@ function getFilteredSorted() {
     return true;
   });
 
-  rows.sort((a, b) => {
-    const va = a[sortCol] || "";
-    const vb = b[sortCol] || "";
-
-    if (sortCol === 0) {
-      const typeCompare = va.localeCompare(vb, "he");
-      if (typeCompare !== 0) return typeCompare * sortDir;
-      return a[1].localeCompare(b[1], "he");
-    }
-
-    if (sortCol === 2) {
-      const pa = parsePriority(va);
-      const pb = parsePriority(vb);
-      if (pa !== pb) {
-        if (!Number.isFinite(pa)) return 1;
-        if (!Number.isFinite(pb)) return -1;
-        return (pa - pb) * sortDir;
-      }
-      const typeTie = (a[0] || '').localeCompare(b[0] || '', "he");
-      if (typeTie !== 0) return typeTie;
-      return (a[1] || '').localeCompare(b[1] || '', "he");
-    }
-
-    const cmp = va.localeCompare(vb, "he");
-    return cmp !== 0 ? cmp * sortDir : a[0].localeCompare(b[0], "he");
-  });
+  rows.sort((a, b) => compareRows(a, b, sortCol, sortDir));
 
   return rows;
 }
 
 function parsePriority(val) {
-  if (val === null || val === undefined || val === '') return Number.POSITIVE_INFINITY;
-  const num = Number(String(val).trim());
-  return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+  if (val === "1") return 0;
+  if (val === "2") return 1;
+  return Number.POSITIVE_INFINITY;
+}
+
+function getSortValue(row, col) {
+  if (col === 2) {
+    return parsePriority(String(row[2] || '').trim());
+  }
+
+  if (col === 11) {
+    return normalizeValue(row[11]) ? 1 : 0;
+  }
+
+  if (col === "latestConversion") {
+    const status = latestYearStatus(row);
+    if (status === "טופל") return 1;
+    if (status === "לא טופל") return 0;
+    return -1;
+  }
+
+  if (YEAR_INDEXES.includes(col)) {
+    const status = normalizeStatus(row[col]);
+    if (status === "טופל") return 1;
+    if (status === "לא טופל") return 0;
+    return -1;
+  }
+
+  return normalizeValue(row[col]).toLowerCase();
+}
+
+function compareRows(a, b, col, dir) {
+  const va = getSortValue(a, col);
+  const vb = getSortValue(b, col);
+
+  if (typeof va === "number" && typeof vb === "number") {
+    if (va !== vb) return (va - vb) * dir;
+  } else {
+    const cmp = String(va).localeCompare(String(vb), "he");
+    if (cmp !== 0) return cmp * dir;
+  }
+
+  const typeCmp = normalizeValue(a[0]).localeCompare(normalizeValue(b[0]), "he");
+  if (typeCmp !== 0) return typeCmp;
+
+  return normalizeValue(a[1]).localeCompare(normalizeValue(b[1]), "he");
 }
 
 function priorityPill(val) {
@@ -785,7 +803,7 @@ function renderTable() {
     return;
   }
 
-  const groupByType = sortCol === 0;
+  const groupByType = sortCol === 0 || sortCol === 2;
   let currentType = null;
 
   rows.forEach(r => {
@@ -812,7 +830,13 @@ function renderTable() {
 
 function renderAllOriginal() {
   TYPES = [...new Set(raw.map(r => r[0]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
-   renderTableHeader()
+  renderTableHeader();
+  const initialSortedHeader = document.querySelector(`#mainTable thead th[data-col="${sortCol}"]`);
+  if (initialSortedHeader) {
+    initialSortedHeader.classList.add("sorted");
+    const icon = initialSortedHeader.querySelector(".sort-icon");
+    if (icon) icon.textContent = sortDir === 1 ? "↑" : "↓";
+  }
   populateTypeFilter();
   renderSummary();
   renderCharts();
@@ -820,9 +844,15 @@ function renderAllOriginal() {
 }
 
 function bindOriginalEvents() {
-  document.querySelectorAll("#mainTable thead th[data-col]").forEach(th => {
-    th.addEventListener("click", () => {
-      const col = parseInt(th.dataset.col, 10);
+  const mainTable = document.getElementById("mainTable");
+  if (mainTable && !mainTable.dataset.sortBound) {
+    mainTable.addEventListener("click", (event) => {
+      const th = event.target.closest("th[data-col]");
+      if (!th || !mainTable.contains(th)) return;
+
+      const rawCol = th.dataset.col;
+      const col = rawCol === "latestConversion" ? rawCol : parseInt(rawCol, 10);
+
       if (sortCol === col) {
         sortDir *= -1;
       } else {
@@ -842,21 +872,28 @@ function bindOriginalEvents() {
 
       renderTable();
     });
-  });
+    mainTable.dataset.sortBound = "true";
+  }
 
   ["searchInput","filterType","filterPrio","filterStatus25"].forEach(id => {
     const el = document.getElementById(id);
+    if (!el || el.dataset.bound) return;
     el.addEventListener("input", renderTable);
     el.addEventListener("change", renderTable);
+    el.dataset.bound = "true";
   });
 
-  document.getElementById("clearFilters").addEventListener("click", () => {
-    document.getElementById("searchInput").value = "";
-    document.getElementById("filterType").value = "";
-    document.getElementById("filterPrio").value = "";
-    document.getElementById("filterStatus25").value = "";
-    renderTable();
-  });
+  const clearBtn = document.getElementById("clearFilters");
+  if (clearBtn && !clearBtn.dataset.bound) {
+    clearBtn.addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("filterType").value = "";
+      document.getElementById("filterPrio").value = "";
+      document.getElementById("filterStatus25").value = "";
+      renderTable();
+    });
+    clearBtn.dataset.bound = "true";
+  }
 }
 
 async function loadOriginalData() {
