@@ -188,6 +188,7 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     <button class="tab-btn" data-tab="table">סקירת גופי תשתית</button>
     <button class="tab-btn" data-tab="experts">מידענים</button>
     <button class="tab-btn" data-tab="pniyot">פניות</button>
+    <button class="tab-btn" data-tab="interests">תמונת מצב אינטרסים</button>
   </div>
 
   <!-- TAB 1 -->
@@ -323,6 +324,50 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
     </div>
   </section>
 
+  <!-- TAB 5 -->
+  <section id="tab-interests" class="tab-panel">
+    <div class="summary-banner" id="interestsSummary"></div>
+
+    <div class="charts-grid" style="margin-top:18px;">
+      <div class="chart-card">
+        <div class="chart-title">התפלגות לפי סוג תשתית</div>
+        <div class="chart-wrap"><canvas id="interestsTypePieChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">עדכונים לפי שנה</div>
+        <div class="chart-wrap"><canvas id="interestsYearChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <div class="table-section-header">
+        <div>
+          <div class="section-title">תמונת מצב אינטרסים</div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="interestsSearchInput" placeholder="🔍  חיפוש...">
+          <button class="filter-clear" id="clearInterestsFilters">נקה</button>
+          <span class="filter-count" id="interestsCount"></span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="interestsTable">
+          <thead>
+            <tr>
+              <th id="interestsCol1Header">עמודה A</th>
+              <th id="interestsCol2Header">עמודה B</th>
+              <th id="interestsCol3Header">עמודה C</th>
+              <th id="interestsCol4Header">עמודה D</th>
+            </tr>
+          </thead>
+          <tbody id="interestsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer>נתונים: קליטת תשתיות ואינטרסים — מאגר גופי תשתית</footer>
@@ -340,7 +385,9 @@ function getAllCharts() {
     avgDurationChart,
     qualityChart,
     workloadChart,
-    projectTimelineChart
+    projectTimelineChart,
+    interestsTypePieChart,
+    interestsYearChart
   ].filter(Boolean);
 }
 
@@ -929,6 +976,17 @@ renderTimelineChart();
 
 /* ---------------- CONVERSION DASHBOARD ---------------- */
 const CONVERSION_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMUz1W6HW_VGMElGWP3uGa9AknLIiFYDEoKhxkSECfXYuaywt_txaQGmOpLzSzN9aa6C18vmryp_XBXKqSzijk-bUBqLbP8EtcugXgwY5ZCHPt-uobwmXR3NexA_lasO2dX-qZPKjgztFB1IKh_ooX03EqRB3a6vjPrJdRZO6IajL578WV1l26jX9qRGrwiUKfn4jDfxYVCMeh_hA2eArnL4Fw2H_ntgYbXp3dEuzH9TIfQ3BrmEhR0KiSwy9aSeYgTNqVfBYjH7m9Y_n94&lib=M7891kwSt8bJi1zhnUcTkqY-MNonZQ_sT";
+const INTERESTS_API_URL = "https://script.googleusercontent.com/a/macros/mapi.gov.il/echo?user_content_key=AWDtjMVDqi-ITvGxz8ivH9QBrWXL5B-sZBP-EvAXkw0c-wgIpMABr4B-RR-lSjtQjUcRWAX2SatmTHPPAaGAYCn9uDMUt0qweG_gfZyaxb2K0GvfzviR86dzCdJYoDupbBfTZckGIQbMvEK1UpOUixoEqMunD5IkOB2l7z_aqNsCQogjn8Kv6azErPzp2PIlJ0iV7OsXzSgEo_uAwfdBDg3O1vbFXlQ63OvYlYttW8jNR1zQ8i5Jud8gLEp-fBb8ByluEDNRXPfiGnjZiEqbGakScGtVfHkt6WoUE4l_OfCyIX0LGtJTuuA&lib=MGciPZN8uiL6VBPzX9GJbWd_p82Qk_FaP";
+const INTERESTS_SHEET_NAME = "תמונת מצב אינטרסים";
+const INTERESTS_KPI_LABELS = Object.freeze([
+  "סך שכבות אינטרסים גופי תשתית",
+  "סך גבולות שיפוט רשויות משרד הפנים",
+  "סך אינטרסים כללי במערכת תת\"ל"
+]);
+
+let interestsRows = [];
+let interestsColumns = ["עמודה A", "עמודה B", "עמודה C", "עמודה D"];
+let interestsTypePieChart = null, interestsYearChart = null;
 
 let chart1 = null, chart2 = null, chart3 = null, expertsChart = null, pniyotChart = null;
 
@@ -1136,10 +1194,7 @@ function renderPniyotDashboard(rows) {
         <div class="s-val green">${months.length.toLocaleString("he-IL")}</div>
         <div class="s-label">חודשים עם פעילות</div>
       </div>
-      <div class="s-stat">
-        <div class="s-val red">${topStatusEntry[1].toLocaleString("he-IL")}</div>
-        <div class="s-label">הסטטוס המוביל: ${topStatusEntry[0]}</div>
-      </div>
+    
     </div>
   `;
 
@@ -1640,11 +1695,292 @@ function renderWorkDashboard(rows) {
   });
 }
 
+
+function normalizeInterestsRows(payload) {
+  if (Array.isArray(payload)) return payload.map(trimRowKeys);
+  if (payload && Array.isArray(payload[INTERESTS_SHEET_NAME])) return payload[INTERESTS_SHEET_NAME].map(trimRowKeys);
+  if (payload && Array.isArray(payload.data)) return payload.data.map(trimRowKeys);
+  if (payload && payload.data && Array.isArray(payload.data[INTERESTS_SHEET_NAME])) return payload.data[INTERESTS_SHEET_NAME].map(trimRowKeys);
+  return [];
+}
+
+function getFirstNColumns(rows, count = 4) {
+  const firstRow = rows.find(row => row && typeof row === 'object') || {};
+  const keys = Object.keys(firstRow).slice(0, count);
+  while (keys.length < count) keys.push(`עמודה ${String.fromCharCode(65 + keys.length)}`);
+  return keys;
+}
+
+function getNthColumnKey(rows, idx) {
+  const firstRow = rows.find(row => row && typeof row === 'object') || {};
+  return Object.keys(firstRow)[idx] || '';
+}
+
+function getInterestCell(row, idx) {
+  const key = interestsColumns[idx];
+  const value = row?.[key];
+  return value === null || value === undefined || String(value).trim() === '' ? '' : String(value).trim();
+}
+
+function getInterestCellByAbsoluteColumn(row, idx) {
+  const key = getNthColumnKey(interestsRows, idx);
+  if (!key) return '';
+  const value = row?.[key];
+  return value === null || value === undefined || String(value).trim() === '' ? '' : String(value).trim();
+}
+
+function parseMetricNumber(value) {
+  if (value === null || value === undefined) return null;
+  const cleaned = String(value).replace(/[,\s]/g, '').trim();
+  if (!cleaned) return null;
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+function extractYear(value) {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  const directYear = raw.match(/\b(19|20)\d{2}\b/);
+  if (directYear) return directYear[0];
+
+  const normalized = raw.replace(/\\/g, '/');
+  const dmy = normalized.match(/^(\d{1,2})\/(\d{1,2})\/((?:19|20)\d{2})$/);
+  if (dmy) return dmy[3];
+
+  const iso = new Date(raw);
+  if (!Number.isNaN(iso.getTime())) return String(iso.getFullYear());
+
+  return null;
+}
+
+function getInterestMetricFromRowBlankKey(rowIndexZeroBased) {
+  const row = interestsRows[rowIndexZeroBased];
+  if (!row) return null;
+  return parseMetricNumber(row[""]);
+}
+
+function renderInterestsSummary() {
+  const el = document.getElementById('interestsSummary');
+  if (!el) return;
+
+  const fixedValues = [
+    getInterestMetricFromRowBlankKey(0),
+    getInterestMetricFromRowBlankKey(1),
+    getInterestMetricFromRowBlankKey(2)
+  ];
+
+  const cards = INTERESTS_KPI_LABELS.map((label, idx) => {
+    const val = fixedValues[idx];
+    const cls = idx === 0 ? 'blue' : idx === 1 ? 'green' : 'teal';
+    return `
+      <div class="s-stat">
+        <div class="s-val ${cls}">${val === null ? '—' : val.toLocaleString('he-IL')}</div>
+        <div class="s-label">${label}</div>
+      </div>
+    `;
+  }).join('');
+
+  el.innerHTML = `<div class="s-stats">${cards}</div>`;
+}
+
+function destroyInterestsCharts() {
+  [interestsTypePieChart, interestsYearChart].forEach(chart => {
+    if (chart) chart.destroy();
+  });
+  interestsTypePieChart = null;
+  interestsYearChart = null;
+}
+
+function renderInterestsCharts() {
+  destroyInterestsCharts();
+
+  const typeCounts = {};
+  const yearCounts = {};
+
+  interestsRows.forEach(row => {
+    const typeValue = getInterestCell(row, 2);
+    const yearValue = getInterestCellByAbsoluteColumn(row, 7);
+
+    if (typeValue) typeCounts[typeValue] = (typeCounts[typeValue] || 0) + 1;
+
+    const year = extractYear(yearValue);
+    if (year) yearCounts[year] = (yearCounts[year] || 0) + 1;
+  });
+
+  const typeEntries = Object.entries(typeCounts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'he'));
+
+  const yearEntries = Object.entries(yearCounts)
+    .sort((a, b) => a[0].localeCompare(b[0], 'en'));
+
+  const pieCanvas = document.getElementById('interestsTypePieChart');
+  if (pieCanvas) {
+    interestsTypePieChart = new Chart(pieCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: typeEntries.map(([label]) => label),
+        datasets: [{
+          data: typeEntries.map(([, value]) => value),
+          backgroundColor: PIE_COLORS,
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { padding: 10, font: { size: 10 }, boxWidth: 12 }
+          }
+        },
+        cutout: '58%'
+      }
+    });
+  }
+
+  const yearCanvas = document.getElementById('interestsYearChart');
+  if (yearCanvas) {
+    interestsYearChart = new Chart(yearCanvas, {
+      type: 'bar',
+      data: {
+        labels: yearEntries.map(([year]) => year),
+        datasets: [{
+          label: 'כמות רשומות',
+          data: yearEntries.map(([, count]) => count),
+          backgroundColor: C.blue,
+          borderRadius: 6,
+          maxBarThickness: 48
+        }]
+      },
+      options: chartOpts({
+        plugins: {
+          legend: { display: false }
+        }
+      })
+    });
+  }
+}
+
+function renderInterestsTable() {
+  const tbody = document.getElementById('interestsBody');
+  const countEl = document.getElementById('interestsCount');
+  const searchValue = (document.getElementById('interestsSearchInput')?.value || '').trim().toLowerCase();
+
+  document.getElementById('interestsCol1Header').textContent = interestsColumns[0] || 'עמודה A';
+  document.getElementById('interestsCol2Header').textContent = interestsColumns[1] || 'עמודה B';
+  document.getElementById('interestsCol3Header').textContent = interestsColumns[2] || 'עמודה C';
+  document.getElementById('interestsCol4Header').textContent = interestsColumns[3] || 'עמודה D';
+
+  const filtered = interestsRows.filter(row => {
+    const values = interestsColumns.map((_, idx) => getInterestCell(row, idx).toLowerCase());
+    if (!searchValue) return true;
+    return values.some(v => v.includes(searchValue));
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="no-results">לא נמצאו תוצאות</td></tr>';
+    if (countEl) countEl.textContent = '0 שורות';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(row => `
+    <tr>
+      <td>${getInterestCell(row, 0) || '<span class="dash">—</span>'}</td>
+      <td>${getInterestCell(row, 1) || '<span class="dash">—</span>'}</td>
+      <td>${getInterestCell(row, 2) || '<span class="dash">—</span>'}</td>
+      <td>${getInterestCell(row, 3) || '<span class="dash">—</span>'}</td>
+    </tr>
+  `).join('');
+
+  if (countEl) countEl.textContent = `${filtered.length.toLocaleString('he-IL')} שורות`;
+}
+
+function setInterestsLoadingState(message = 'טוען נתוני אינטרסים...') {
+  const summary = document.getElementById('interestsSummary');
+  const body = document.getElementById('interestsBody');
+  const countEl = document.getElementById('interestsCount');
+  if (summary) {
+    summary.innerHTML = `
+      <div class="loading-shell">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="section-sub">${message}</div>
+      </div>`;
+  }
+  if (body) {
+    body.innerHTML = `<tr><td colspan="4" class="no-results"><div class="loading-shell"><div class="spinner" aria-hidden="true"></div><div>${message}</div></div></td></tr>`;
+  }
+  if (countEl) countEl.textContent = '';
+  destroyInterestsCharts();
+}
+
+function setInterestsErrorState(message) {
+  const summary = document.getElementById('interestsSummary');
+  const body = document.getElementById('interestsBody');
+  const countEl = document.getElementById('interestsCount');
+  if (summary) {
+    summary.innerHTML = `
+      <div style="color:var(--red);font-weight:700;">שגיאה בטעינת נתוני אינטרסים</div>
+      <div class="section-sub">${message}</div>`;
+  }
+  if (body) body.innerHTML = `<tr><td colspan="4" class="no-results">${message}</td></tr>`;
+  if (countEl) countEl.textContent = '';
+  destroyInterestsCharts();
+}
+function bindInterestsEvents() {
+  const searchInput = document.getElementById('interestsSearchInput');
+  const clearBtn = document.getElementById('clearInterestsFilters');
+
+  if (searchInput && !searchInput.dataset.bound) {
+    searchInput.addEventListener('input', renderInterestsTable);
+    searchInput.dataset.bound = 'true';
+  }
+
+  if (clearBtn && !clearBtn.dataset.bound) {
+    clearBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      renderInterestsTable();
+    });
+    clearBtn.dataset.bound = 'true';
+  }
+}
+
+async function loadInterestsDashboard() {
+  setInterestsLoadingState();
+
+  try {
+    const response = await fetch(INTERESTS_API_URL, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const payload = await response.json();
+    const rows = normalizeInterestsRows(payload);
+    if (!rows.length) throw new Error(`Sheet "${INTERESTS_SHEET_NAME}" not found or empty.`);
+
+    interestsRows = rows;
+    interestsColumns = getFirstNColumns(rows, 4);
+    renderInterestsSummary();
+    renderInterestsCharts();
+    renderInterestsTable();
+  } catch (error) {
+    console.error('Failed to load interests data:', error);
+    setInterestsErrorState('לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   bindOriginalEvents();
+  bindInterestsEvents();
   loadOriginalData();
   loadConversionDashboard();
+  loadInterestsDashboard();
 });
 </script>
 </body>
