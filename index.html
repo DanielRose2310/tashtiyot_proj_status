@@ -439,7 +439,6 @@ function renderTableHeader() {
   `;
 }
 /* ---------------- ORIGINAL DASHBOARD LOGIC ---------------- */
-const ORIGINAL_API_URL = "https://script.googleusercontent.com/a/macros/mapi.gov.il/echo?user_content_key=AWDtjMXi_axOcHFLgNUVY-B_zMgORY_dPqT3OpGSeA2j4gCuEuwmhsULNJrc_r0n0DrQKRsvGGG93TeKIikgPSJidVm-Fehp1S-wi-3RSmpaXDHjDBKyQHVfAPx6qEyBMREhHR_ei1j3Cy140j5WdvG10nUciJ5RbEPsaRIgwF0VL2BDfgzivywa-8SgimD0m5-rj4nguxvMhjzxeV7KgEJz3wGu6Wgq7GGi7rVLy5qwwdqDfS8r3HlatxKGBEby_cuKIi_ThsXBAyHDWRMvapNeR3evl5xViVcs1zCcaWV4rwxs9yBttrg&lib=MukQpa7AmSROif_1gei7mD9_p82Qk_FaP";
 const YEARS = ["2019","2020","2021","2022","2023","2024","2025","2026"];
 const YEAR_INDEXES = [3,4,5,6,7,8,9,10];
 const TOTAL_COLS = 5 + YEARS.length;
@@ -949,34 +948,36 @@ function bindOriginalEvents() {
   }
 }
 
-async function loadOriginalData() {
+function getSheetRows(payload, sheetName) {
+  if (!payload) return [];
+  if (Array.isArray(payload?.[sheetName])) return payload[sheetName];
+  if (payload.data && Array.isArray(payload.data?.[sheetName])) return payload.data[sheetName];
+  return [];
+}
+
+async function loadOriginalDataFromPayload(payload) {
   setLoadingState();
 
   try {
-    const response = await fetch(ORIGINAL_API_URL, {
-      method: "GET",
-      headers: { "Accept": "application/json" }
-    });
+    const rows = getSheetRows(payload, INFRASTRUCTURE_SHEET_NAME);
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!Array.isArray(rows) || !rows.length) {
+      throw new Error(`Sheet "${INFRASTRUCTURE_SHEET_NAME}" not found or empty.`);
+    }
 
-    const payload = await response.json();
-    const rows = Array.isArray(payload) ? payload : payload.data;
-
-    if (!Array.isArray(rows)) throw new Error("מבנה תגובה לא תקין");
-
-    raw = rows.map(normalizeRow).filter(row => row[0] || row[1]);
-renderAllOriginal();
-renderTimelineChart();
+    raw = rows.map(trimRowKeys).map(normalizeRow).filter(row => row[0] || row[1]);
+    renderAllOriginal();
+    renderTimelineChart();
   } catch (error) {
-    console.error("Failed to load data:", error);
-    setErrorState("לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.");
+    console.error("Failed to load infrastructure data:", error);
+    setErrorState("לא ניתן לטעון נתוני הסבת תשתיות מתוך נתוני האינטרסים.");
   }
 }
 
 /* ---------------- CONVERSION DASHBOARD ---------------- */
 const CONVERSION_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMUz1W6HW_VGMElGWP3uGa9AknLIiFYDEoKhxkSECfXYuaywt_txaQGmOpLzSzN9aa6C18vmryp_XBXKqSzijk-bUBqLbP8EtcugXgwY5ZCHPt-uobwmXR3NexA_lasO2dX-qZPKjgztFB1IKh_ooX03EqRB3a6vjPrJdRZO6IajL578WV1l26jX9qRGrwiUKfn4jDfxYVCMeh_hA2eArnL4Fw2H_ntgYbXp3dEuzH9TIfQ3BrmEhR0KiSwy9aSeYgTNqVfBYjH7m9Y_n94&lib=M7891kwSt8bJi1zhnUcTkqY-MNonZQ_sT";
 const INTERESTS_API_URL = "https://script.googleusercontent.com/a/macros/mapi.gov.il/echo?user_content_key=AWDtjMVDqi-ITvGxz8ivH9QBrWXL5B-sZBP-EvAXkw0c-wgIpMABr4B-RR-lSjtQjUcRWAX2SatmTHPPAaGAYCn9uDMUt0qweG_gfZyaxb2K0GvfzviR86dzCdJYoDupbBfTZckGIQbMvEK1UpOUixoEqMunD5IkOB2l7z_aqNsCQogjn8Kv6azErPzp2PIlJ0iV7OsXzSgEo_uAwfdBDg3O1vbFXlQ63OvYlYttW8jNR1zQ8i5Jud8gLEp-fBb8ByluEDNRXPfiGnjZiEqbGakScGtVfHkt6WoUE4l_OfCyIX0LGtJTuuA&lib=MGciPZN8uiL6VBPzX9GJbWd_p82Qk_FaP";
+const INFRASTRUCTURE_SHEET_NAME = "תמונת מצב הסבת תשתיות";
 const INTERESTS_SHEET_NAME = "תמונת מצב אינטרסים";
 const INTERESTS_KPI_LABELS = Object.freeze([
   "סך שכבות אינטרסים גופי תשתית",
@@ -1948,18 +1949,10 @@ function bindInterestsEvents() {
   }
 }
 
-async function loadInterestsDashboard() {
+async function loadInterestsDashboardFromPayload(payload) {
   setInterestsLoadingState();
 
   try {
-    const response = await fetch(INTERESTS_API_URL, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const payload = await response.json();
     const rows = normalizeInterestsRows(payload);
     if (!rows.length) throw new Error(`Sheet "${INTERESTS_SHEET_NAME}" not found or empty.`);
 
@@ -1970,17 +1963,42 @@ async function loadInterestsDashboard() {
     renderInterestsTable();
   } catch (error) {
     console.error('Failed to load interests data:', error);
-    setInterestsErrorState('לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.');
+    setInterestsErrorState('לא ניתן לטעון נתוני אינטרסים מתוך נתוני השרת.');
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+let interestsPayloadPromise = null;
+
+async function fetchInterestsPayloadOnce() {
+  if (!interestsPayloadPromise) {
+    interestsPayloadPromise = fetch(INTERESTS_API_URL, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    }).then(async response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    });
+  }
+
+  return interestsPayloadPromise;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   bindOriginalEvents();
   bindInterestsEvents();
-  loadOriginalData();
+
+  try {
+    const interestsPayload = await fetchInterestsPayloadOnce();
+    loadOriginalDataFromPayload(interestsPayload);
+    loadInterestsDashboardFromPayload(interestsPayload);
+  } catch (error) {
+    console.error('Failed to load shared interests payload:', error);
+    setErrorState('לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.');
+    setInterestsErrorState('לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.');
+  }
+
   loadConversionDashboard();
-  loadInterestsDashboard();
 });
 </script>
 </body>
