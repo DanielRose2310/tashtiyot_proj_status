@@ -110,6 +110,11 @@ main{max-width:1400px;margin:0 auto;padding:24px 36px 32px;display:flex;flex-dir
 .chart-title small{font-size:0.73rem;color:var(--muted);font-weight:400;}
 .chart-wrap{position:relative;height:270px;}
 .chart-wrap.tall{height:340px;}
+.chart-wrap.is-loading{min-height:180px;overflow:hidden;border-radius:10px;background:linear-gradient(90deg,rgba(240,242,245,.65),rgba(255,255,255,.95),rgba(240,242,245,.65));background-size:220% 100%;animation:shimmer 1.15s ease-in-out infinite;}
+.chart-wrap.is-loading canvas{opacity:.04;}
+.chart-wrap.is-loading::before{content:'';position:absolute;top:calc(50% - 28px);right:calc(50% - 13px);width:26px;height:26px;border:3px solid rgba(59,130,246,.18);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;z-index:2;}
+.chart-wrap.is-loading::after{content:attr(data-loading);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:42px;color:var(--muted);font-weight:700;font-size:.82rem;text-align:center;z-index:1;}
+@keyframes shimmer{0%{background-position:100% 0;}100%{background-position:-100% 0;}}
 
 /* TABLE */
 .table-section-header{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px;}
@@ -243,8 +248,8 @@ footer{text-align:center;color:var(--muted);font-size:0.72rem;padding:22px 36px;
           </select>
           <select id="filterStatus25">
             <option value="">עבר הסבה — הכל</option>
-            <option value="done">V</option>
-            <option value="todo">X</option>
+            <option value="done">פרויקטים שעברו הסבה</option>
+            <option value="todo">פרויקטים שלא עברו הסבה</option>
           </select>
           <button class="filter-clear" id="clearFilters">נקה</button>
           <span class="filter-count" id="filterCount"></span>
@@ -473,6 +478,47 @@ const PIE_COLORS = [
 Chart.defaults.color = '#6b7280';
 Chart.defaults.font.family = "'Heebo',sans-serif";
 
+const INFRA_CHART_IDS = ['cByType','cPieDone','cPieTodo','cPieLoaded','cTimeline'];
+const CONVERSION_CHART_IDS = ['expertsChart','avgDurationChart','qualityChart','workloadChart','projectTimelineChart','projectsByMonthChart','projectsByMonthTypeChart','geomsByMonthChart','pniyotChart'];
+const INTERESTS_CHART_IDS = ['interestsTypePieChart','interestsYearChart'];
+
+function setChartWidgetsLoading(ids, isLoading, message = 'טוען נתונים...') {
+  ids.forEach(id => {
+    const canvas = document.getElementById(id);
+    const wrap = canvas?.closest('.chart-wrap');
+    if (!wrap) return;
+    wrap.classList.toggle('is-loading', Boolean(isLoading));
+    if (isLoading) wrap.setAttribute('data-loading', message);
+    else wrap.removeAttribute('data-loading');
+  });
+}
+
+function setSummaryWidgetLoading(id, message) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="loading-shell"><div class="spinner" aria-hidden="true"></div><div class="section-sub">${message}</div></div>`;
+}
+
+function setConversionLoadingState(message = 'טוען נתוני משימות והסבות...') {
+  setSummaryWidgetLoading('expertsSummary', message);
+  setSummaryWidgetLoading('workSummary', 'מחשב מדדי עומס, איכות וזמנים...');
+  setSummaryWidgetLoading('pniyotSummary', 'טוען ומסכם פניות...');
+  setChartWidgetsLoading(CONVERSION_CHART_IDS, true, message);
+  const errorEl = document.getElementById('conversionError');
+  if (errorEl) errorEl.innerHTML = `<div class="loading-shell"><div class="spinner" aria-hidden="true"></div><div>${message}</div></div>`;
+}
+
+function clearConversionLoadingState() {
+  setChartWidgetsLoading(CONVERSION_CHART_IDS, false);
+  const errorEl = document.getElementById('conversionError');
+  if (errorEl) errorEl.textContent = '';
+}
+
+function debounce(fn, wait = 120) {
+  let timeout;
+  return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => fn(...args), wait); };
+}
+
 function normalizeValue(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
@@ -539,6 +585,7 @@ function setLoadingState(message = "טוען נתונים...") {
     </tr>
   `;
   document.getElementById("filterCount").textContent = "";
+  setChartWidgetsLoading(INFRA_CHART_IDS, true, message);
 }
 
 function setErrorState(message) {
@@ -692,6 +739,7 @@ const todoByYear = YEARS.map((_, i) => raw.filter(r => isTodo(r, YEAR_INDEXES[i]
     data: { labels: typesAll, datasets: [{ data: loadedCnt, backgroundColor: PIE_COLORS, borderWidth: 2, borderColor: '#ffffff' }] },
     options: doughnutOpts
   });
+  setChartWidgetsLoading(['cByType','cPieDone','cPieTodo','cPieLoaded'], false);
 }
 function renderTimelineChart() {
   if (!document.getElementById("cTimeline")) return;
@@ -727,6 +775,7 @@ function renderTimelineChart() {
     },
     options: chartOpts()
   });
+  setChartWidgetsLoading(['cTimeline'], false);
 }
 const pH = value =>
   value === "טופל"
@@ -930,7 +979,7 @@ function bindOriginalEvents() {
   ["searchInput","filterType","filterPrio","filterStatus25"].forEach(id => {
     const el = document.getElementById(id);
     if (!el || el.dataset.bound) return;
-    el.addEventListener("input", renderTable);
+    el.addEventListener("input", debounce(renderTable, 120));
     el.addEventListener("change", renderTable);
     el.dataset.bound = "true";
   });
@@ -1276,7 +1325,7 @@ function getGeomSum(row) {
 
 async function loadConversionDashboard() {
   const errorEl = document.getElementById("conversionError");
-  errorEl.textContent = "";
+  setConversionLoadingState();
 
   try {
     const res = await fetch(CONVERSION_API_URL);
@@ -1387,9 +1436,11 @@ async function loadConversionDashboard() {
 
     renderExpertsDashboard(finishedTaskRows);
     renderPniyotDashboard(taskRows);
-      renderWorkDashboard(taskRows); 
+    renderWorkDashboard(taskRows);
+    clearConversionLoadingState();
   } catch (err) {
-    errorEl.textContent = "שגיאה בטעינת הנתונים: " + err.message;
+    setChartWidgetsLoading(CONVERSION_CHART_IDS, false);
+    if (errorEl) errorEl.textContent = "שגיאה בטעינת הנתונים: " + err.message;
     console.error(err);
   }
 }
@@ -1515,7 +1566,7 @@ function renderWorkDashboard(rows) {
     }
 
     if (!workloadByExpert[expert]) workloadByExpert[expert] = { active: 0, paused: 0, broken: 0 };
-    if (taskStatus === 'פעילה') {
+    if (taskStatus === 'פעיל') {
       workloadByExpert[expert].active += 1;
       totalOpenTasks += 1;
     } else if (taskStatus === 'השהייה') {
@@ -1916,6 +1967,7 @@ function setInterestsLoadingState(message = 'טוען נתוני אינטרסי�
   }
   if (countEl) countEl.textContent = '';
   destroyInterestsCharts();
+  setChartWidgetsLoading(INTERESTS_CHART_IDS, true, message);
 }
 
 function setInterestsErrorState(message) {
@@ -1930,13 +1982,14 @@ function setInterestsErrorState(message) {
   if (body) body.innerHTML = `<tr><td colspan="4" class="no-results">${message}</td></tr>`;
   if (countEl) countEl.textContent = '';
   destroyInterestsCharts();
+  setChartWidgetsLoading(INTERESTS_CHART_IDS, false);
 }
 function bindInterestsEvents() {
   const searchInput = document.getElementById('interestsSearchInput');
   const clearBtn = document.getElementById('clearInterestsFilters');
 
   if (searchInput && !searchInput.dataset.bound) {
-    searchInput.addEventListener('input', renderInterestsTable);
+    searchInput.addEventListener('input', debounce(renderInterestsTable, 120));
     searchInput.dataset.bound = 'true';
   }
 
@@ -1960,6 +2013,7 @@ async function loadInterestsDashboardFromPayload(payload) {
     interestsColumns = getFirstNColumns(rows, 4);
     renderInterestsSummary();
     renderInterestsCharts();
+    setChartWidgetsLoading(INTERESTS_CHART_IDS, false);
     renderInterestsTable();
   } catch (error) {
     console.error('Failed to load interests data:', error);
@@ -1988,6 +2042,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindOriginalEvents();
   bindInterestsEvents();
 
+  setLoadingState('טוען נתוני הסבת תשתיות...');
+  setInterestsLoadingState('טוען נתוני אינטרסים...');
+  setConversionLoadingState('טוען נתוני משימות והסבות...');
+
+  const conversionPromise = loadConversionDashboard();
+
   try {
     const interestsPayload = await fetchInterestsPayloadOnce();
     loadOriginalDataFromPayload(interestsPayload);
@@ -1998,7 +2058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterestsErrorState('לא ניתן לטעון נתונים מהשרת. בדוק הרשאות / CORS / מבנה JSON.');
   }
 
-  loadConversionDashboard();
+  await conversionPromise;
 });
 </script>
 </body>
