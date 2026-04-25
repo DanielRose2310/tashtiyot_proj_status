@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>תמונת מצב הסבת תשתיות</title>
+<script>
+  const savedTheme = localStorage.getItem("dashboard-theme");
+  if (savedTheme) {
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="assets/css/dashboard.css">
@@ -15,7 +21,10 @@
     <div class="sub">לוח בקרה תפעולי</div>
   </div>
   <div class="header-actions">
-    <button id="themeToggle" class="theme-toggle" type="button">מצב כהה</button>
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="החלפת מצב תצוגה">
+  <span class="theme-toggle__icon">🌙</span>
+  <span class="theme-toggle__text">מצב כהה</span>
+</button>
   </div>
 </header>
 
