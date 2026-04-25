@@ -1,0 +1,724 @@
+// conversion.js — dashboard module
+/* ---------------- CONVERSION DASHBOARD ---------------- */
+const CONVERSION_API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMUz1W6HW_VGMElGWP3uGa9AknLIiFYDEoKhxkSECfXYuaywt_txaQGmOpLzSzN9aa6C18vmryp_XBXKqSzijk-bUBqLbP8EtcugXgwY5ZCHPt-uobwmXR3NexA_lasO2dX-qZPKjgztFB1IKh_ooX03EqRB3a6vjPrJdRZO6IajL578WV1l26jX9qRGrwiUKfn4jDfxYVCMeh_hA2eArnL4Fw2H_ntgYbXp3dEuzH9TIfQ3BrmEhR0KiSwy9aSeYgTNqVfBYjH7m9Y_n94&lib=M7891kwSt8bJi1zhnUcTkqY-MNonZQ_sT";
+const INTERESTS_API_URL = "https://script.googleusercontent.com/a/macros/mapi.gov.il/echo?user_content_key=AWDtjMVDqi-ITvGxz8ivH9QBrWXL5B-sZBP-EvAXkw0c-wgIpMABr4B-RR-lSjtQjUcRWAX2SatmTHPPAaGAYCn9uDMUt0qweG_gfZyaxb2K0GvfzviR86dzCdJYoDupbBfTZckGIQbMvEK1UpOUixoEqMunD5IkOB2l7z_aqNsCQogjn8Kv6azErPzp2PIlJ0iV7OsXzSgEo_uAwfdBDg3O1vbFXlQ63OvYlYttW8jNR1zQ8i5Jud8gLEp-fBb8ByluEDNRXPfiGnjZiEqbGakScGtVfHkt6WoUE4l_OfCyIX0LGtJTuuA&lib=MGciPZN8uiL6VBPzX9GJbWd_p82Qk_FaP";
+const INFRASTRUCTURE_SHEET_NAME = "תמונת מצב הסבת תשתיות";
+const INTERESTS_SHEET_NAME = "תמונת מצב אינטרסים";
+const INTERESTS_KPI_LABELS = Object.freeze([
+  "סך שכבות אינטרסים גופי תשתית",
+  "סך גבולות שיפוט רשויות משרד הפנים",
+  "סך אינטרסים כללי במערכת תת\"ל"
+]);
+
+let interestsRows = [];
+let interestsColumns = ["עמודה A", "עמודה B", "עמודה C", "עמודה D"];
+let interestsTypePieChart = null, interestsYearChart = null;
+
+let chart1 = null, chart2 = null, chart3 = null, expertsChart = null, pniyotChart = null;
+
+function parseDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function getFirstDefinedValue(row, ...keys) {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(row, key)) {
+      const value = row[key];
+      if (value !== null && value !== undefined && String(value).trim() !== "") {
+        return value;
+      }
+    }
+  }
+  return "";
+}
+function getRowDate(row, ...keys) {
+  return parseDate(getFirstDefinedValue(row, ...keys));
+}
+function getMonthKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+function formatMonthLabel(monthKey) {
+  const [y, m] = monthKey.split("-");
+  return `${m}-${y}`;
+}
+function toNumber(value) {
+  if (value === null || value === undefined || value === "") return 0;
+  if (typeof value === "number") return value;
+  const n = Number(String(value).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+function trimRowKeys(row) {
+  return Object.fromEntries(
+    Object.entries(row || {}).map(([key, value]) => [String(key).trim(), value])
+  );
+}
+function getGeomSourceRows(originalPayload, conversionRows) {
+  const originalRows = (Array.isArray(originalPayload)
+    ? originalPayload
+    : Array.isArray(originalPayload?.data)
+      ? originalPayload.data
+      : []
+  ).map(trimRowKeys);
+
+  const candidates = [originalRows, conversionRows];
+  return candidates.find(rows => rows.some(row => row["תאריך סיום"] && (
+    "נקודות (כמות)" in row ||
+    "קווים (כמות)" in row ||
+    'קווים (אורך בק"מ)' in row ||
+    "מצולעים (כמות)" in row
+  ))) || [];
+}
+function normalizeType2(value) {
+  const v = String(value || "").trim();
+  return v || "ללא סוג";
+}
+function destroyConversionCharts() {
+  [chart1, chart2, chart3, expertsChart, pniyotChart].forEach(c => { if (c) c.destroy(); });
+}
+
+function normalizeExpertName(value) {
+  const v = String(value || "").trim();
+  return v || "ללא שם";
+}
+
+function renderExpertsDashboard(rows) {
+  const summaryEl = document.getElementById("expertsSummary");
+  if (!summaryEl) return;
+
+  const counts = {};
+  const cutoffDate = new Date("2026-01-01T00:00:00");
+
+  for (const row of rows) {
+    const endDate = getRowDate(row, "תאריך סיום", "תאריך סיום ");
+    if (!endDate || endDate < cutoffDate) continue;
+
+    const expert = normalizeExpertName(
+      getFirstDefinedValue(row, "שם מידען", "שם המידען", "מבצע המשימה")
+    );
+    counts[expert] = (counts[expert] || 0) + 1;
+  }
+
+  const entries = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "he"));
+
+  const totalLayers = entries.reduce((sum, [, count]) => sum + count, 0);
+  const totalExperts = entries.length;
+  const avgLayersPerExpert = totalExperts ? totalLayers / totalExperts : 0;
+
+  summaryEl.innerHTML = `
+    <div class="s-stats">
+      <div class="s-stat">
+        <div class="s-val blue">${totalLayers.toLocaleString("he-IL")}</div>
+        <div class="s-label">שכבות שהוסבו מאז 1/1/2026</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val teal">${totalExperts.toLocaleString("he-IL")}</div>
+        <div class="s-label">מידענים פעילים</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val green">${avgLayersPerExpert.toFixed(1)}</div>
+        <div class="s-label">ממוצע שכבות למידען</div>
+      </div>
+ 
+    </div>
+  `;
+
+  if (expertsChart) expertsChart.destroy();
+  expertsChart = new Chart(document.getElementById("expertsChart"), {
+    type: "bar",
+    data: {
+      labels: entries.map(([name]) => name),
+      datasets: [{
+        label: "שכבות שהוסבו מאז 1/1/2026",
+        data: entries.map(([, count]) => count),
+        borderWidth: 1,
+        borderRadius: 8,
+        maxBarThickness: 42
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.raw.toLocaleString("he-IL")} שכבות`
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0 } },
+        y: { ticks: { autoSkip: false } }
+      }
+    }
+  });
+}
+
+function isPniyaOrgName(value) {
+  if (value === null || value === undefined) return false;
+  return /^\d+$/.test(String(value).trim());
+}
+
+function pniyaMonthKey(value) {
+  const d = parseDate(value);
+  if (!d) return null;
+  const minDate = new Date("2026-01-01T00:00:00");
+  if (d < minDate) return null;
+  return getMonthKey(d);
+}
+
+function normalizePniyaStatus(value) {
+  const v = String(value || "").trim();
+  return v || "אחר";
+}
+
+function renderPniyotDashboard(rows) {
+  const summaryEl = document.getElementById("pniyotSummary");
+  if (!summaryEl) return;
+
+  const pniyotRows = (Array.isArray(rows) ? rows : []).filter(row => isPniyaOrgName(row["שם הארגון"]));
+  const filteredRows = pniyotRows.filter(row => pniyaMonthKey(getFirstDefinedValue(row, "תאריך תחילה", "תאריך תחילה ")));
+
+  const byMonthStatus = {};
+  const statusesSet = new Set();
+
+  filteredRows.forEach(row => {
+    const month = pniyaMonthKey(getFirstDefinedValue(row, "תאריך תחילה", "תאריך תחילה "));
+    if (!month) return;
+
+    const status = normalizePniyaStatus(row["סטטוס"]);
+    statusesSet.add(status);
+
+    if (!byMonthStatus[month]) byMonthStatus[month] = {};
+    byMonthStatus[month][status] = (byMonthStatus[month][status] || 0) + 1;
+  });
+
+  const months = Object.keys(byMonthStatus).sort();
+  const statuses = Array.from(statusesSet).sort((a, b) => a.localeCompare(b, "he"));
+  const totalPniyot = pniyotRows.length;
+
+  const topStatusEntry = statuses
+    .map(status => [status, filteredRows.filter(r => normalizePniyaStatus(r["סטטוס"]) === status).length])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "he"))[0] || ["—", 0];
+
+  summaryEl.innerHTML = `
+    <div class="s-stats">
+      <div class="s-stat">
+        <div class="s-val blue">${filteredRows.length.toLocaleString("he-IL")}</div>
+        <div class="s-label">פניות מאז 2026</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val teal">${totalPniyot.toLocaleString("he-IL")}</div>
+        <div class="s-label">פניות (סה״כ)</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val green">${months.length.toLocaleString("he-IL")}</div>
+        <div class="s-label">חודשים עם פעילות</div>
+      </div>
+    
+    </div>
+  `;
+
+  const statusColors = {
+    "הסתיימה": "rgba(5,150,105,.85)",
+    "פעילה": "rgba(59,130,246,.85)",
+    "השהייה": "rgba(217,119,6,.85)",
+    "אחר": "rgba(107,114,128,.85)"
+  };
+  const fallbackColors = [
+    "rgba(139,92,246,.85)",
+    "rgba(20,184,166,.85)",
+    "rgba(249,115,22,.85)",
+    "rgba(236,72,153,.85)",
+    "rgba(34,197,94,.85)",
+    "rgba(239,68,68,.85)"
+  ];
+
+  const datasets = statuses.map((status, idx) => ({
+    label: status,
+    data: months.map(month => byMonthStatus[month]?.[status] || 0),
+    backgroundColor: statusColors[status] || fallbackColors[idx % fallbackColors.length],
+    borderRadius: 6,
+    maxBarThickness: 44
+  }));
+
+  if (pniyotChart) pniyotChart.destroy();
+
+  pniyotChart = new Chart(document.getElementById("pniyotChart"), {
+    type: "bar",
+    data: {
+      labels: months.map(formatMonthLabel),
+      datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } }
+      },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+}
+
+
+const TASK_SHEET_NAME = "מסך ניהול משימות";
+const Q2_SHEET_NAME = "רישום תשתיות לפי יישויות - Q2";
+
+function normalizeApiRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(trimRowKeys);
+}
+
+function getFinishedDate(row) {
+  return getRowDate(row, "תאריך סיום", "תאריך יצירה", "תאריך", "חודש");
+}
+
+function getLayerCount(row) {
+  return toNumber(getFirstDefinedValue(
+    row,
+    "כמות שכבות בקובץ",
+    "כמות שכבות",
+    "count"
+  )) || 1;
+}
+
+function getGeomSum(row) {
+  return (
+    toNumber(getFirstDefinedValue(row, "נקודות (כמות)", "נקודות")) +
+    toNumber(getFirstDefinedValue(row, "קווים (כמות)", "קווים")) +
+    toNumber(getFirstDefinedValue(row, 'קווים (אורך בק"מ)', 'קווים (אורך בקמ)', "אורך קווים")) +
+    toNumber(getFirstDefinedValue(row, "מצולעים (כמות)", "מצולעים"))
+  );
+}
+
+async function loadConversionDashboard() {
+  const errorEl = document.getElementById("conversionError");
+  setConversionLoadingState();
+
+  try {
+    const res = await fetch(CONVERSION_API_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+
+    const taskRows = normalizeApiRows(json[TASK_SHEET_NAME]);
+    const q2Rows = normalizeApiRows(json[Q2_SHEET_NAME]);
+
+    if (!taskRows.length) {
+      throw new Error(`Sheet "${TASK_SHEET_NAME}" not found or empty.`);
+    }
+    if (!q2Rows.length) {
+      throw new Error(`Sheet "${Q2_SHEET_NAME}" not found or empty.`);
+    }
+
+    const finishedTaskRows = taskRows.filter(row => getRowDate(row, "תאריך סיום", "תאריך סיום "));
+    const finishedQ2Rows = q2Rows.filter(row => getFinishedDate(row));
+
+    const byMonthProjects = {};
+    const byMonthGeoms = {};
+    const byTypeAndMonth = {};
+    const monthsSet = new Set();
+
+    for (const row of finishedQ2Rows) {
+      const endDate = getFinishedDate(row);
+      if (!endDate) continue;
+
+      const month = getMonthKey(endDate);
+      const type = normalizeType2(getFirstDefinedValue(row, "סוג תשתית"));
+      const layerCount = getLayerCount(row);
+      const geomSum = getGeomSum(row);
+
+      monthsSet.add(month);
+      byMonthProjects[month] = (byMonthProjects[month] || 0) + layerCount;
+
+      if (!byTypeAndMonth[type]) byTypeAndMonth[type] = {};
+      byTypeAndMonth[type][month] = (byTypeAndMonth[type][month] || 0) + layerCount;
+
+      byMonthGeoms[month] = (byMonthGeoms[month] || 0) + geomSum;
+    }
+
+    const months = Array.from(monthsSet).sort();
+    const labels = months.map(formatMonthLabel);
+
+    destroyConversionCharts();
+
+    chart1 = new Chart(document.getElementById("projectsByMonthChart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "שכבות",
+          data: months.map(m => byMonthProjects[m] || 0),
+          borderWidth: 3,
+          tension: 0.25,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    chart2 = new Chart(document.getElementById("projectsByMonthTypeChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: Object.keys(byTypeAndMonth)
+          .sort((a, b) => a.localeCompare(b, "he"))
+          .map(type => ({
+            label: type,
+            data: months.map(m => byTypeAndMonth[type][m] || 0),
+            borderWidth: 1
+          }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    chart3 = new Chart(document.getElementById("geomsByMonthChart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: 'סה"כ יחידות גיאומטריות',
+          data: months.map(m => byMonthGeoms[m] || 0),
+          borderWidth: 3,
+          tension: 0.25,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    renderExpertsDashboard(finishedTaskRows);
+    renderPniyotDashboard(taskRows);
+    renderWorkDashboard(taskRows);
+    clearConversionLoadingState();
+  } catch (err) {
+    setChartWidgetsLoading(CONVERSION_CHART_IDS, false);
+    if (errorEl) errorEl.textContent = "שגיאה בטעינת הנתונים: " + err.message;
+    console.error(err);
+  }
+}
+
+
+let avgDurationChart = null, qualityChart = null, workloadChart = null, projectTimelineChart = null;
+
+function getTaskField(row, ...keys) {
+  for (const key of keys) {
+    if (row && row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+  }
+  return '';
+}
+function normalizeTaskExpert(value) {
+  const v = String(value || '').trim();
+  return v || 'ללא שם';
+}
+function normalizeTaskStatus(value) {
+  return String(value || '').trim();
+}
+function parseTaskDate(value) {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+
+  // Excel serial date, e.g. 45847
+  if (/^\d{5}(?:\.\d+)?$/.test(s)) {
+    const serial = Number(s);
+    if (!Number.isFinite(serial) || serial <= 0) return null;
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const ms = excelEpoch.getTime() + serial * 86400000;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // d/m/y or d\m\y
+  const normalized = s.replace(/\\/g, '/');
+  const dmy = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    const day = Number(dmy[1]);
+    const month = Number(dmy[2]);
+    const year = Number(dmy[3]);
+    if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const d = new Date(year, month - 1, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+    return d;
+  }
+
+  // ISO / yyyy-mm-dd
+  const iso = new Date(s);
+  if (Number.isNaN(iso.getTime())) return null;
+  if (iso.getFullYear() < 2000 || iso.getFullYear() > 2100) return null;
+  return iso;
+}
+function diffDays(start, end) {
+  return (end - start) / (1000 * 60 * 60 * 24);
+}
+function isReasonableDuration(days) {
+  return Number.isFinite(days) && days >= 0 && days <= 365;
+}
+function normalizeProjectKind(value) {
+  const v = String(value || '').trim();
+  if (v.includes('תמיכה')) return 'תמיכה טכנית';
+  if (v.includes('תשת')) return 'תשתיות';
+  return '';
+}
+function isRelevantQualityStatus(value) {
+  const v = String(value || '').trim();
+  if (!v) return false;
+  if (v === 'תמיכה טכנית - לא רלוונטי') return false;
+  if (v === 'טרם נבדק') return false;
+  return true;
+}
+function isValidQualityStatus(value) {
+  return String(value || '').includes('נבדק ותקין');
+}
+function destroyWorkCharts() {
+  [avgDurationChart, qualityChart, workloadChart, projectTimelineChart].forEach(c => { if (c) c.destroy(); });
+}
+function renderWorkDashboard(rows) {
+  const summaryEl = document.getElementById('workSummary');
+  if (!summaryEl) return;
+
+  const durationByExpert = {};
+  const qualityByExpert = {};
+  const workloadByExpert = {};
+  const projectByMonth = { 'תשתיות': {}, 'תמיכה טכנית': {} };
+  const allMonths = new Set();
+
+  let totalDuration = 0;
+  let totalDurationCount = 0;
+  let totalRelevantQuality = 0;
+  let totalValidQuality = 0;
+  let totalOpenTasks = 0;
+
+  for (const row of (Array.isArray(rows) ? rows : [])) {
+    const expert = normalizeTaskExpert(getTaskField(row, 'מבצע המשימה'));
+    const startDate = parseTaskDate(getTaskField(row, 'תאריך תחילה', 'תאריך תחילה '));
+    const endDate = parseTaskDate(getTaskField(row, 'תאריך סיום', 'תאריך סיום '));
+    const taskStatus = normalizeTaskStatus(getTaskField(row, 'סטטוס'));
+    const qaStatus = normalizeTaskStatus(getTaskField(row, 'סטטוס לבדיקה'));
+    const projectKind = normalizeProjectKind(getTaskField(row, 'פרויקט משימה'));
+
+    if (startDate && endDate) {
+      const days = diffDays(startDate, endDate);
+      if (isReasonableDuration(days)) {
+        if (!durationByExpert[expert]) durationByExpert[expert] = { total: 0, count: 0 };
+        durationByExpert[expert].total += days;
+        durationByExpert[expert].count += 1;
+        totalDuration += days;
+        totalDurationCount += 1;
+      }
+    }
+
+    if (isRelevantQualityStatus(qaStatus)) {
+      if (!qualityByExpert[expert]) qualityByExpert[expert] = { valid: 0, total: 0 };
+      qualityByExpert[expert].total += 1;
+      totalRelevantQuality += 1;
+      if (isValidQualityStatus(qaStatus)) {
+        qualityByExpert[expert].valid += 1;
+        totalValidQuality += 1;
+      }
+    }
+
+    if (!workloadByExpert[expert]) workloadByExpert[expert] = { active: 0, paused: 0, broken: 0 };
+    if (taskStatus === 'פעילה') {
+      workloadByExpert[expert].active += 1;
+      totalOpenTasks += 1;
+    } else if (taskStatus === 'השהייה') {
+      workloadByExpert[expert].paused += 1;
+      totalOpenTasks += 1;
+    } else if (taskStatus === 'תקול') {
+      workloadByExpert[expert].broken += 1;
+      totalOpenTasks += 1;
+    }
+
+    if (endDate && projectKind) {
+      const month = getMonthKey(endDate);
+      allMonths.add(month);
+      projectByMonth[projectKind][month] = (projectByMonth[projectKind][month] || 0) + 1;
+    }
+  }
+
+  const avgDuration = totalDurationCount ? totalDuration / totalDurationCount : 0;
+  const validPct = totalRelevantQuality ? (totalValidQuality / totalRelevantQuality) * 100 : 0;
+  const totalExpertOpenLoad = Object.values(workloadByExpert)
+    .reduce((sum, obj) => sum + (obj.active || 0) + (obj.paused || 0) + (obj.broken || 0), 0);
+
+  summaryEl.innerHTML = `
+    <div class="s-stats">
+      <div class="s-stat">
+        <div class="s-val blue">${avgDuration.toFixed(1)}</div>
+        <div class="s-label">ימי הסבה ממוצעים למשימה</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val green">${validPct.toFixed(0)}%</div>
+        <div class="s-label">משימות שעבר בדיקת תקינות מתוך משימות שנבדקו</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val red">${totalOpenTasks.toLocaleString('he-IL')}</div>
+        <div class="s-label">משימות פתוחות כרגע</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val teal">${totalExpertOpenLoad.toLocaleString('he-IL')}</div>
+        <div class="s-label">עומס פתוח אצל המידענים</div>
+      </div>
+    </div>`;
+
+  destroyWorkCharts();
+
+  const durationEntries = Object.entries(durationByExpert)
+    .map(([name, obj]) => ([name, obj.count ? obj.total / obj.count : 0]))
+    .filter(([, value]) => Number.isFinite(value) && value >= 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'he'));
+
+  avgDurationChart = new Chart(document.getElementById('avgDurationChart'), {
+    type: 'bar',
+    data: {
+      labels: durationEntries.map(([name]) => name),
+      datasets: [{
+        label: 'ימי הסבה ממוצעים',
+        data: durationEntries.map(([, value]) => value > 0 ? Number(value.toFixed(2)) : 0.1),
+        rawDurations: durationEntries.map(([, value]) => Number(value.toFixed(2))),
+        borderWidth: 1,
+        borderRadius: 8,
+        maxBarThickness: 42
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const raw = ctx.dataset.rawDurations?.[ctx.dataIndex] ?? ctx.raw;
+              return `ימי הסבה ממוצעים: ${raw.toLocaleString('he-IL')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 0.1,
+          ticks: {
+            callback(value) {
+              if (value === 0.1) return '0';
+              return Number(value).toLocaleString('he-IL');
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const qualityEntries = Object.entries(qualityByExpert)
+    .filter(([, obj]) => obj.total > 0)
+    .map(([name, obj]) => ([name, (obj.valid / obj.total) * 100]))
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'he'));
+
+  qualityChart = new Chart(document.getElementById('qualityChart'), {
+    type: 'bar',
+    data: {
+      labels: qualityEntries.map(([name]) => name),
+      datasets: [{
+        label: '% תקין',
+        data: qualityEntries.map(([, value]) => Number(value.toFixed(1))),
+        borderWidth: 1,
+        borderRadius: 8,
+        maxBarThickness: 42
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toFixed(1)}% תקין` } }
+      },
+      scales: { x: { beginAtZero: true, max: 100 } }
+    }
+  });
+
+  const workloadEntries = Object.entries(workloadByExpert)
+    .map(([name, obj]) => ([name, obj]))
+    .filter(([, obj]) => obj.active > 0 || obj.paused > 0 || obj.broken > 0)
+    .sort((a, b) => (b[1].active + b[1].paused + b[1].broken) - (a[1].active + a[1].paused + a[1].broken) || a[0].localeCompare(b[0], 'he'));
+
+  workloadChart = new Chart(document.getElementById('workloadChart'), {
+    type: 'bar',
+    data: {
+      labels: workloadEntries.map(([name]) => name),
+   datasets: [
+  {
+    label: 'פעילה',
+    data: Object.values(workloadByExpert).map(x => x.active),
+    backgroundColor: 'rgba(59,130,246,.85)', // blue
+    borderRadius: 6
+  },
+  {
+    label: 'השהייה',
+    data: Object.values(workloadByExpert).map(x => x.paused),
+    backgroundColor: 'rgba(217,119,6,.85)', // 🔴 red (switched)
+    borderRadius: 6
+    
+  },
+  {
+    label: 'תקול',
+    data: Object.values(workloadByExpert).map(x => x.broken),
+    backgroundColor: 'rgba(220,38,38,.85)', // 🟠 orange (switched)
+    borderRadius: 6
+  }
+]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { beginAtZero: true, stacked: true, ticks: { precision: 0 } }, y: { stacked: true } },
+      plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } } }
+    }
+  });
+
+  const months = Array.from(allMonths).sort();
+  projectTimelineChart = new Chart(document.getElementById('projectTimelineChart'), {
+    type: 'line',
+    data: {
+      labels: months.map(formatMonthLabel),
+      datasets: [
+        { label: 'תשתיות', data: months.map(m => projectByMonth['תשתיות'][m] || 0), borderWidth: 3, tension: 0.25, fill: false },
+        { label: 'תמיכה טכנית', data: months.map(m => projectByMonth['תמיכה טכנית'][m] || 0), borderWidth: 3, tension: 0.25, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      plugins: { legend: { display: true, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 14 } } }
+    }
+  });
+}
