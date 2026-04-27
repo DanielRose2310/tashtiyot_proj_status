@@ -612,3 +612,4 @@ async function loadOriginalDataFromPayload(payload) {
     setErrorState("לא ניתן לטעון נתוני הסבת תשתיות מתוך נתוני האינטרסים.");
   }
 }
+
