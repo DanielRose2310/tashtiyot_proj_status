@@ -108,6 +108,18 @@ function renderExpertsDashboard(rows) {
   const totalExperts = entries.length;
   const avgLayersPerExpert = totalExperts ? totalLayers / totalExperts : 0;
 
+  const endDates = (Array.isArray(rows) ? rows : [])
+    .map(row => getRowDate(row, "תאריך סיום", "תאריך סיום "))
+    .filter(date => date && date >= cutoffDate);
+  const latestEndDate = endDates.length
+    ? new Date(Math.max(...endDates.map(date => date.getTime())))
+    : cutoffDate;
+  const elapsedDays = Math.max(1, Math.ceil((latestEndDate - cutoffDate) / (1000 * 60 * 60 * 24)) + 1);
+  const elapsedWeeks = Math.max(1, elapsedDays / 7);
+  const elapsedMonths = Math.max(1, elapsedDays / 30.4375);
+  const weeklyAvgLayersPerExpert = avgLayersPerExpert / elapsedWeeks;
+  const monthlyAvgLayersPerExpert = avgLayersPerExpert / elapsedMonths;
+
   summaryEl.innerHTML = `
     <div class="s-stats">
       <div class="s-stat">
@@ -122,7 +134,15 @@ function renderExpertsDashboard(rows) {
         <div class="s-val green">${avgLayersPerExpert.toFixed(1)}</div>
         <div class="s-label">ממוצע שכבות למידען</div>
       </div>
- 
+      <div class="s-stat">
+        <div class="s-val green">${weeklyAvgLayersPerExpert.toFixed(1)}</div>
+        <div class="s-label">ממוצע שבועי שכבות למידען</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val green">${monthlyAvgLayersPerExpert.toFixed(1)}</div>
+        <div class="s-label">ממוצע חודשי שכבות למידען</div>
+      </div>
+
     </div>
   `;
 

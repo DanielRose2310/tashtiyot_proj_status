@@ -1,4 +1,5 @@
 // interests.js — dashboard module
+
 function normalizeInterestsRows(payload) {
   if (Array.isArray(payload)) return payload.map(trimRowKeys);
   if (payload && Array.isArray(payload[INTERESTS_SHEET_NAME])) return payload[INTERESTS_SHEET_NAME].map(trimRowKeys);
@@ -31,6 +32,29 @@ function getInterestCellByAbsoluteColumn(row, idx) {
   const value = row?.[key];
   return value === null || value === undefined || String(value).trim() === '' ? '' : String(value).trim();
 }
+
+/* === NEW: date helpers === */
+
+function getInterestDateKey() {
+  return getNthColumnKey(interestsRows, 7);
+}
+
+function formatDateDDMMYY(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+}
+
+function getInterestDate(row) {
+  const raw = getInterestCellByAbsoluteColumn(row, 7);
+  return formatDateDDMMYY(raw);
+}
+
+/* ========================= */
 
 function parseMetricNumber(value) {
   if (value === null || value === undefined) return null;
@@ -104,7 +128,7 @@ function renderInterestsCharts() {
 
   interestsRows.forEach(row => {
     const typeValue = getInterestCell(row, 2);
-    const yearValue = getInterestCellByAbsoluteColumn(row, 7);
+    const yearValue = getInterestDate(row);
 
     if (typeValue) typeCounts[typeValue] = (typeCounts[typeValue] || 0) + 1;
 
@@ -160,9 +184,7 @@ function renderInterestsCharts() {
         }]
       },
       options: chartOpts({
-        plugins: {
-          legend: { display: false }
-        }
+        plugins: { legend: { display: false } }
       })
     });
   }
@@ -178,14 +200,20 @@ function renderInterestsTable() {
   document.getElementById('interestsCol3Header').textContent = interestsColumns[2] || 'עמודה C';
   document.getElementById('interestsCol4Header').textContent = interestsColumns[3] || 'עמודה D';
 
+  const dateHeader = document.getElementById('interestsDateHeader');
+  if (dateHeader) dateHeader.textContent = getInterestDateKey() || 'תאריך';
+
   const filtered = interestsRows.filter(row => {
-    const values = interestsColumns.map((_, idx) => getInterestCell(row, idx).toLowerCase());
+    const values = [
+      ...interestsColumns.map((_, idx) => getInterestCell(row, idx).toLowerCase()),
+      (getInterestDate(row) || '').toLowerCase()
+    ];
     if (!searchValue) return true;
     return values.some(v => v.includes(searchValue));
   });
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="no-results">${renderEmptyState()}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="no-results">${renderEmptyState()}</td></tr>`;
     if (countEl) countEl.textContent = '0 שורות';
     return;
   }
@@ -196,6 +224,7 @@ function renderInterestsTable() {
       <td>${getInterestCell(row, 1) || '<span class="dash">—</span>'}</td>
       <td>${getInterestCell(row, 2) || '<span class="dash">—</span>'}</td>
       <td>${getInterestCell(row, 3) || '<span class="dash">—</span>'}</td>
+      <td>${getInterestDate(row) || '<span class="dash">—</span>'}</td>
     </tr>
   `).join('');
 
@@ -206,17 +235,18 @@ function setInterestsLoadingState(message = 'טוען נתוני אינטרסי�
   const summary = document.getElementById('interestsSummary');
   const body = document.getElementById('interestsBody');
   const countEl = document.getElementById('interestsCount');
+
   if (summary) {
     summary.innerHTML = renderSkeletonSummary() + `
       <div class="loading-shell">
-        <div class="spinner" aria-hidden="true"></div>
+        <div class="spinner"></div>
         <div class="section-sub">${message}</div>
       </div>`;
   }
-  if (body) {
-    body.innerHTML = renderSkeletonTableRows(4, 8);
-  }
+
+  if (body) body.innerHTML = renderSkeletonTableRows(5, 8);
   if (countEl) countEl.textContent = 'טוען...';
+
   destroyInterestsCharts();
   setChartWidgetsLoading(INTERESTS_CHART_IDS, true, message);
 }
@@ -225,16 +255,20 @@ function setInterestsErrorState(message) {
   const summary = document.getElementById('interestsSummary');
   const body = document.getElementById('interestsBody');
   const countEl = document.getElementById('interestsCount');
+
   if (summary) {
     summary.innerHTML = `
       <div style="color:var(--red);font-weight:700;">שגיאה בטעינת נתוני אינטרסים</div>
       <div class="section-sub">${message}</div>`;
   }
-  if (body) body.innerHTML = `<tr><td colspan="4" class="no-results">${renderEmptyState("שגיאה בטעינת הנתונים", message)}</td></tr>`;
+
+  if (body) body.innerHTML = `<tr><td colspan="5" class="no-results">${renderEmptyState("שגיאה בטעינת הנתונים", message)}</td></tr>`;
   if (countEl) countEl.textContent = '';
+
   destroyInterestsCharts();
   setChartWidgetsLoading(INTERESTS_CHART_IDS, false);
 }
+
 function bindInterestsEvents() {
   const searchInput = document.getElementById('interestsSearchInput');
   const clearBtn = document.getElementById('clearInterestsFilters');
@@ -262,6 +296,7 @@ async function loadInterestsDashboardFromPayload(payload) {
 
     interestsRows = rows;
     interestsColumns = getFirstNColumns(rows, 4);
+
     renderInterestsSummary();
     renderInterestsCharts();
     setChartWidgetsLoading(INTERESTS_CHART_IDS, false);
