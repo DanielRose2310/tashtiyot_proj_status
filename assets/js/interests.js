@@ -33,7 +33,23 @@ function getInterestCellByAbsoluteColumn(row, idx) {
   return value === null || value === undefined || String(value).trim() === '' ? '' : String(value).trim();
 }
 
-/* === NEW: date helpers === */
+function isInterestTotalRow(row) {
+  return Object.values(row || {}).some(value => {
+    const text = String(value ?? '').trim().toUpperCase();
+    return text === 'TOTAL' || text === 'סה"כ' || text === 'סהכ';
+  });
+}
+
+function isRealInterestDataRow(row) {
+  if (!row || typeof row !== 'object') return false;
+  if (isInterestTotalRow(row)) return false;
+
+  return Object.values(row).some(value => String(value ?? '').trim() !== '');
+}
+
+function getInterestDataRows() {
+  return interestsRows.filter(isRealInterestDataRow);
+}
 
 function getInterestDateKey() {
   return getNthColumnKey(interestsRows, 7);
@@ -53,8 +69,6 @@ function getInterestDate(row) {
   const raw = getInterestCellByAbsoluteColumn(row, 7);
   return formatDateDDMMYY(raw);
 }
-
-/* ========================= */
 
 function parseMetricNumber(value) {
   if (value === null || value === undefined) return null;
@@ -93,7 +107,7 @@ function renderInterestsSummary() {
   if (!el) return;
 
   const fixedValues = [
-    getInterestMetricFromRowBlankKey(0),
+    getInterestDataRows().length,
     getInterestMetricFromRowBlankKey(1),
     getInterestMetricFromRowBlankKey(2)
   ];
@@ -125,8 +139,9 @@ function renderInterestsCharts() {
 
   const typeCounts = {};
   const yearCounts = {};
+  const rows = getInterestDataRows();
 
-  interestsRows.forEach(row => {
+  rows.forEach(row => {
     const typeValue = getInterestCell(row, 2);
     const yearValue = getInterestDate(row);
 
@@ -203,11 +218,12 @@ function renderInterestsTable() {
   const dateHeader = document.getElementById('interestsDateHeader');
   if (dateHeader) dateHeader.textContent = getInterestDateKey() || 'תאריך';
 
-  const filtered = interestsRows.filter(row => {
+  const filtered = getInterestDataRows().filter(row => {
     const values = [
       ...interestsColumns.map((_, idx) => getInterestCell(row, idx).toLowerCase()),
       (getInterestDate(row) || '').toLowerCase()
     ];
+
     if (!searchValue) return true;
     return values.some(v => v.includes(searchValue));
   });
