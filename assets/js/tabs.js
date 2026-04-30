@@ -19,6 +19,7 @@ function getAllCharts() {
     chart1,
     chart2,
     chart3,
+    overviewWeeklyProjectsChart,
     expertsChart,
     pniyotChart,
     avgDurationChart,

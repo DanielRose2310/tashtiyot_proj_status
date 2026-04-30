@@ -14,7 +14,7 @@ let interestsRows = [];
 let interestsColumns = ["עמודה A", "עמודה B", "עמודה C", "עמודה D"];
 let interestsTypePieChart = null, interestsYearChart = null;
 
-let chart1 = null, chart2 = null, chart3 = null, expertsChart = null, pniyotChart = null;
+let chart1 = null, chart2 = null, chart3 = null, expertsChart = null, pniyotChart = null, overviewWeeklyProjectsChart = null;
 
 function parseDate(value) {
   if (!value) return null;
@@ -76,7 +76,7 @@ function normalizeType2(value) {
   return v || "ללא סוג";
 }
 function destroyConversionCharts() {
-  [chart1, chart2, chart3, expertsChart, pniyotChart].forEach(c => { if (c) c.destroy(); });
+  [chart1, chart2, chart3, expertsChart, pniyotChart, overviewWeeklyProjectsChart].forEach(c => { if (c) c.destroy(); });
 }
 
 function normalizeExpertName(value) {
@@ -319,6 +319,98 @@ function getGeomSum(row) {
   );
 }
 
+function getTaskDate(row, ...keys) {
+  return parseTaskDate(getTaskField(row, ...keys));
+}
+
+function getSundayWeekStart(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function formatShortDate(date) {
+  return date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+}
+
+function formatWeekLabel(weekStart, cutoffDate) {
+  const labelStart = weekStart < cutoffDate ? cutoffDate : weekStart;
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  return `${formatShortDate(weekEnd)}–${formatShortDate(labelStart)}`;
+}
+
+function addWeek(map, date, cutoffDate) {
+  if (!date || date < cutoffDate) return null;
+  const weekStart = getSundayWeekStart(date);
+  const key = weekStart.toISOString().slice(0, 10);
+  map[key] = (map[key] || 0) + 1;
+  return weekStart;
+}
+
+function renderOverviewWeeklyProjectsChart(rows) {
+  const canvas = document.getElementById('overviewWeeklyProjectsChart');
+  if (!canvas || !window.Chart) return;
+
+  if (overviewWeeklyProjectsChart) overviewWeeklyProjectsChart.destroy();
+
+  const cutoffDate = new Date(2026, 0, 1);
+  const incomingByWeek = {};
+  const completedByWeek = {};
+  let maxDate = cutoffDate;
+
+  for (const row of (Array.isArray(rows) ? rows : [])) {
+    const startDate = getTaskDate(row, 'תאריך התחלה', 'תאריך התחלה ', 'תאריך תחילה', 'תאריך תחילה ');
+    const endDate = getTaskDate(row, 'תאריך סיום', 'תאריך סיום ');
+
+    if (addWeek(incomingByWeek, startDate, cutoffDate) && startDate > maxDate) maxDate = startDate;
+    if (addWeek(completedByWeek, endDate, cutoffDate) && endDate > maxDate) maxDate = endDate;
+  }
+
+  const firstWeek = getSundayWeekStart(cutoffDate);
+  const lastWeek = getSundayWeekStart(maxDate);
+  const weekStarts = [];
+  for (let d = new Date(firstWeek); d <= lastWeek; d.setDate(d.getDate() + 7)) {
+    weekStarts.push(new Date(d));
+  }
+
+  overviewWeeklyProjectsChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: weekStarts.map(d => formatWeekLabel(d, cutoffDate)),
+      datasets: [
+        {
+          label: 'פרויקטים שהתקבלו',
+          data: weekStarts.map(d => incomingByWeek[d.toISOString().slice(0, 10)] || 0),
+          backgroundColor: C.blue,
+          borderRadius: 7,
+          maxBarThickness: 36
+        },
+        {
+          label: 'פרויקטים שהושלמו',
+          data: weekStarts.map(d => completedByWeek[d.toISOString().slice(0, 10)] || 0),
+          backgroundColor: C.green,
+          borderRadius: 7,
+          maxBarThickness: 36
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { maxRotation: 45, minRotation: 0 } },
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('he-IL')}` } }
+      }
+    }
+  });
+}
+
+
 async function loadConversionDashboard() {
   const errorEl = document.getElementById("conversionError");
   setConversionLoadingState();
@@ -430,6 +522,7 @@ async function loadConversionDashboard() {
       }
     });
 
+    renderOverviewWeeklyProjectsChart(taskRows);
     renderExpertsDashboard(finishedTaskRows);
     renderPniyotDashboard(taskRows);
     renderWorkDashboard(taskRows);

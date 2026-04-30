@@ -35,7 +35,7 @@ Chart.defaults.color = '#6b7280';
 Chart.defaults.font.family = "'Heebo',sans-serif";
 
 const INFRA_CHART_IDS = ['cByType','cPieDone','cPieTodo','cPieLoaded','cTimeline'];
-const CONVERSION_CHART_IDS = ['expertsChart','avgDurationChart','qualityChart','workloadChart','projectTimelineChart','projectsByMonthChart','projectsByMonthTypeChart','geomsByMonthChart','pniyotChart'];
+const CONVERSION_CHART_IDS = ['overviewWeeklyProjectsChart','expertsChart','avgDurationChart','qualityChart','workloadChart','projectTimelineChart','projectsByMonthChart','projectsByMonthTypeChart','geomsByMonthChart','pniyotChart'];
 const INTERESTS_CHART_IDS = ['interestsTypePieChart','interestsYearChart'];
 
 
