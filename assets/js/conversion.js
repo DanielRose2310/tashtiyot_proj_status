@@ -595,10 +595,7 @@ function renderWorkDashboard(rows) {
         <div class="s-val green">${validPct.toFixed(0)}%</div>
         <div class="s-label">משימות שעבר בדיקת תקינות מתוך משימות שנבדקו</div>
       </div>
-      <div class="s-stat">
-        <div class="s-val red">${totalOpenTasks.toLocaleString('he-IL')}</div>
-        <div class="s-label">משימות פתוחות כרגע</div>
-      </div>
+      
       <div class="s-stat">
         <div class="s-val teal">${totalExpertOpenLoad.toLocaleString('he-IL')}</div>
         <div class="s-label">עומס פתוח אצל המידענים</div>

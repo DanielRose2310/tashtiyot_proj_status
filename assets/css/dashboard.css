@@ -316,6 +316,7 @@ html[data-theme="dark"] .summary-banner {
 }
 
 .s-val {
+  order:0;
   font-size:2.8rem;
   font-weight:900;
   line-height:1;
@@ -328,9 +329,10 @@ html[data-theme="dark"] .summary-banner {
 .s-val.teal { color:var(--teal); }
 
 .s-label {
+  order:-1;
   font-size:.74rem;
   color:var(--muted);
-  font-weight:400;
+  font-weight:800;
   text-align:center;
   line-height:1.4;
   max-width:150px;
