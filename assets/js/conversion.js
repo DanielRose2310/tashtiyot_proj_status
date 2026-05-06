@@ -373,40 +373,87 @@ function renderOverviewWeeklyProjectsChart(rows) {
   for (let d = new Date(firstWeek); d <= lastWeek; d.setDate(d.getDate() + 7)) {
     weekStarts.push(new Date(d));
   }
+const ctx = canvas.getContext('2d');
+
+// subtle gradient fill
+const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+gradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
 
   overviewWeeklyProjectsChart = new Chart(canvas, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: weekStarts.map(d => formatWeekLabel(d, cutoffDate)),
-      datasets: [
-        {
-          label: 'פרויקטים שהתקבלו',
-          data: weekStarts.map(d => incomingByWeek[d.toISOString().slice(0, 10)] || 0),
-          backgroundColor: C.blue,
-          borderRadius: 7,
-          maxBarThickness: 36
-        },
-        {
-          label: 'פרויקטים שהושלמו',
-          data: weekStarts.map(d => completedByWeek[d.toISOString().slice(0, 10)] || 0),
-          backgroundColor: C.green,
-          borderRadius: 7,
-          maxBarThickness: 36
-        }
-      ]
+    datasets: [
+  {
+    label: 'פרויקטים שהושלמו',
+    data: weekStarts.map(d => completedByWeek[d.toISOString().slice(0, 10)] || 0),
+
+    borderColor: C.green,
+    backgroundColor: gradient,
+
+    borderWidth: 3,
+    tension: 0.35,              // smoother curve
+    fill: true,                 // enables gradient
+
+    pointRadius: 3,
+    pointHoverRadius: 6,
+    pointBackgroundColor: C.green,
+    pointBorderWidth: 2,
+    pointBorderColor: '#fff',
+
+    hitRadius: 12               // easier hover
+  }
+]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { ticks: { maxRotation: 45, minRotation: 0 } },
-        y: { beginAtZero: true, ticks: { precision: 0 } }
-      },
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('he-IL')}` } }
+ options: {
+  responsive: true,
+  maintainAspectRatio: false,
+
+  interaction: {
+    mode: 'index',
+    intersect: false
+  },
+
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        usePointStyle: true,
+        pointStyle: 'circle',
+        padding: 14
+      }
+    },
+    tooltip: {
+      backgroundColor: '#111827',
+      titleColor: '#fff',
+      bodyColor: '#e5e7eb',
+      padding: 10,
+      displayColors: false,
+      callbacks: {
+        label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('he-IL')}`
       }
     }
+  },
+
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: {
+        maxRotation: 0,
+        autoSkip: true,
+        maxTicksLimit: 8
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: { precision: 0 },
+      grid: {
+        color: 'rgba(0,0,0,0.05)'
+      }
+    }
+  }
+}
   });
 }
 
