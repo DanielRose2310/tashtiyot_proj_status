@@ -118,36 +118,19 @@
   <!-- TAB 3 -->
   <section id="tab-experts" class="tab-panel">
     <div class="summary-banner" id="expertsSummary"></div>
-    <div class="summary-banner" id="workSummary" style="margin-top:18px;"></div>
+    <div class="summary-banner" id="workSummary" ></div>
 
-    <div class="chart-card" style="margin-top:18px;">
-      <div class="chart-title">כמות שכבות שהוסבו לפי מידען <small> מבוסס על השדה "שם מידען"</small></div>
-      <div class="chart-wrap tall" style="height:420px;"><canvas id="expertsChart"></canvas></div>
-    </div>
-
-    <div class="charts-grid" style="margin-top:18px;">
-      <div class="chart-card">
-        <div class="chart-title">זמן הסבה ממוצע לפי מידען <small>מספר ימים ממוצע למשימה שהסתיימה</small></div>
-        <div class="chart-wrap tall" style="height:380px;"><canvas id="avgDurationChart"></canvas></div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-title">אחוז משימות שעברו בדיקת תקינות לפי מידען <small>מבוסס על סטטוס לבדיקה רלוונטי</small></div>
-        <div class="chart-wrap tall" style="height:380px;"><canvas id="qualityChart"></canvas></div>
-      </div>
-
-      <div class="chart-card full">
+  
+  <div class="conversion-shell">
+        <div class="chart-card full">
         <div class="chart-title">עומס עבודה פתוח לפי מידען <small> פעילה / תקול / השהייה</small></div>
         <div class="chart-wrap tall" style="height:380px;"><canvas id="workloadChart"></canvas></div>
       </div>
+    
+    <div class="chart-card" >
+      <div class="chart-title">כמות שכבות שהוסבו לפי מידען <small> מבוסס על השדה "שם מידען"</small></div>
+      <div class="chart-wrap tall" style="height:420px;"><canvas id="expertsChart"></canvas></div>
     </div>
-
-    <div class="chart-card" style="margin-top:18px;">
-      <div class="chart-title">Timeline: תשתיות מול תמיכה טכנית <small>כמות משימות שהסתיימו לפי חודש</small></div>
-      <div class="chart-wrap tall" style="height:380px;"><canvas id="projectTimelineChart"></canvas></div>
-    </div>
-
-    <div class="conversion-shell">
       <div class="chart-card">
         <div class="chart-title">כמות שכבות שהוסבו לפי חודש</div>
         <div class="chart-wrap tall"><canvas id="projectsByMonthChart"></canvas></div>
@@ -165,13 +148,31 @@
 
       <div id="conversionError" class="error"></div>
     </div>
+    <div class="charts-grid" >
+      <div class="chart-card">
+        <div class="chart-title">זמן הסבה ממוצע לפי מידען <small>מספר ימים ממוצע למשימה שהסתיימה</small></div>
+        <div class="chart-wrap tall" style="height:380px;"><canvas id="avgDurationChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">אחוז משימות שעברו בדיקת תקינות לפי מידען <small>מבוסס על סטטוס לבדיקה רלוונטי</small></div>
+        <div class="chart-wrap tall" style="height:380px;"><canvas id="qualityChart"></canvas></div>
+      </div>
+
+
+    <div class="chart-card" >
+      <div class="chart-title">Timeline: תשתיות מול תמיכה טכנית <small>כמות משימות שהסתיימו לפי חודש</small></div>
+      <div class="chart-wrap tall" style="height:380px;"><canvas id="projectTimelineChart"></canvas></div>
+    </div>
+  </div> 
+  
   </section>
 
   <!-- TAB 4 -->
   <section id="tab-pniyot" class="tab-panel">
     <div class="summary-banner" id="pniyotSummary"></div>
 
-    <div class="chart-card" style="margin-top:18px;">
+    <div class="chart-card">
       <div class="chart-title">פניות לפי סטטוס <small>החל מ-01/01/2026</small></div>
       <div class="chart-wrap tall" style="height:420px;"><canvas id="pniyotChart"></canvas></div>
     </div>
@@ -181,7 +182,7 @@
   <section id="tab-interests" class="tab-panel">
     <div class="summary-banner" id="interestsSummary"></div>
 
-    <div class="charts-grid" style="margin-top:18px;">
+    <div class="charts-grid" >
       <div class="chart-card">
         <div class="chart-title">התפלגות לפי סוג תשתית</div>
         <div class="chart-wrap"><canvas id="interestsTypePieChart"></canvas></div>
@@ -193,7 +194,7 @@
       </div>
     </div>
 
-    <div class="chart-card" style="margin-top:18px;">
+    <div class="chart-card" >
       <div class="table-section-header">
         <div>
           <div class="section-title">תמונת מצב אינטרסים</div>
