@@ -124,11 +124,11 @@ function renderExpertsDashboard(rows) {
     <div class="s-stats">
       <div class="s-stat">
         <div class="s-val blue">${totalLayers.toLocaleString("he-IL")}</div>
-        <div class="s-label">שכבות שהוסבו מאז 1/1/2026</div>
+        <div class="s-label">שכבות שהוסבו מאז 01/01/2026</div>
       </div>
       <div class="s-stat">
         <div class="s-val teal">${totalExperts.toLocaleString("he-IL")}</div>
-        <div class="s-label">מידענים פעילים</div>
+        <div class="s-label">מידענים פעילים מאז 01/01/2026</div>
       </div>
       <div class="s-stat">
         <div class="s-val green">${avgLayersPerExpert.toFixed(1)}</div>
