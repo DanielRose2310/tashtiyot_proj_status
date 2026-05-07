@@ -11,6 +11,7 @@
   --text:#111827;
   --muted:#6b7280;
   --teal:#14b8a6;
+  --purple:#7c3aed;
   --shadow-sm:0 6px 18px rgba(17,24,39,.045);
   --shadow-md:0 14px 36px rgba(17,24,39,.075);
   --ring:0 0 0 3px rgba(59,130,246,.16);
@@ -29,6 +30,7 @@ html[data-theme="dark"] {
   --text:#e5e7eb;
   --muted:#94a3b8;
   --teal:#2dd4bf;
+  --purple:#a78bfa;
   --shadow-sm:0 8px 24px rgba(0,0,0,.22);
   --shadow-md:0 18px 42px rgba(0,0,0,.32);
   --ring:0 0 0 3px rgba(96,165,250,.20);
@@ -327,6 +329,7 @@ html[data-theme="dark"] .summary-banner {
 .s-val.green { color:var(--green); }
 .s-val.red { color:var(--red); }
 .s-val.teal { color:var(--teal); }
+.s-val.purple { color:var(--purple); }
 
 .s-label {
   order:-1;

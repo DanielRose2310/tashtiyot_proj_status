@@ -84,7 +84,7 @@ function normalizeExpertName(value) {
   return v || "ללא שם";
 }
 
-function renderExpertsDashboard(rows) {
+function renderExpertsDashboard(rows, convertedLayerRows = []) {
   const summaryEl = document.getElementById("expertsSummary");
   if (!summaryEl) return;
 
@@ -108,9 +108,20 @@ function renderExpertsDashboard(rows) {
   const totalExperts = entries.length;
   const avgLayersPerExpert = totalExperts ? totalLayers / totalExperts : 0;
 
-  const endDates = (Array.isArray(rows) ? rows : [])
+  const convertedSinceCutoff = (Array.isArray(convertedLayerRows) ? convertedLayerRows : [])
+    .map(row => ({ row, endDate: getFinishedDate(row) }))
+    .filter(({ endDate }) => endDate && endDate >= cutoffDate);
+
+  const totalConvertedLayersSince2026 = convertedSinceCutoff.reduce(
+    (sum, { row }) => sum + getLayerCount(row),
+    0
+  );
+
+  const layerEndDates = convertedSinceCutoff.map(({ endDate }) => endDate);
+  const taskEndDates = (Array.isArray(rows) ? rows : [])
     .map(row => getRowDate(row, "תאריך סיום", "תאריך סיום "))
     .filter(date => date && date >= cutoffDate);
+  const endDates = [...taskEndDates, ...layerEndDates];
   const latestEndDate = endDates.length
     ? new Date(Math.max(...endDates.map(date => date.getTime())))
     : cutoffDate;
@@ -119,16 +130,25 @@ function renderExpertsDashboard(rows) {
   const elapsedMonths = Math.max(1, elapsedDays / 30.4375);
   const weeklyAvgLayersPerExpert = avgLayersPerExpert / elapsedWeeks;
   const monthlyAvgLayersPerExpert = avgLayersPerExpert / elapsedMonths;
+  const avgConvertedLayersPerMonthSince2026 = totalConvertedLayersSince2026 / elapsedMonths;
 
   summaryEl.innerHTML = `
     <div class="s-stats">
       <div class="s-stat">
         <div class="s-val blue">${totalLayers.toLocaleString("he-IL")}</div>
-        <div class="s-label">שכבות שהוסבו מאז 01/01/2026</div>
+        <div class="s-label">גופים שהוסבו מאז 01/01/2026</div>
       </div>
       <div class="s-stat">
         <div class="s-val teal">${totalExperts.toLocaleString("he-IL")}</div>
         <div class="s-label">מידענים פעילים מאז 01/01/2026</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val purple">${totalConvertedLayersSince2026.toLocaleString("he-IL")}</div>
+        <div class="s-label">סה״כ שכבות שהוסבו מאז 01/01/2026</div>
+      </div>
+      <div class="s-stat">
+        <div class="s-val purple">${avgConvertedLayersPerMonthSince2026.toFixed(1)}</div>
+        <div class="s-label">ממוצע חודשי שכבות שהוסבו מאז 01/01/2026</div>
       </div>
       <div class="s-stat">
         <div class="s-val green">${avgLayersPerExpert.toFixed(1)}</div>
@@ -570,7 +590,7 @@ async function loadConversionDashboard() {
     });
 
     renderOverviewWeeklyProjectsChart(taskRows);
-    renderExpertsDashboard(finishedTaskRows);
+    renderExpertsDashboard(finishedTaskRows, finishedQ2Rows);
     renderPniyotDashboard(taskRows);
     renderWorkDashboard(taskRows);
     clearConversionLoadingState();
